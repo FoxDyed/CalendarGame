@@ -15,9 +15,9 @@ const DAILY_TEST_DATE := {
 @onready var board: Control = %Board
 @onready var piece_tray: Control = %PieceTray
 @onready var ui_controls: Control = %UIControls
-@onready var rotate_hint_label: Label = get_node_or_null("%UIControls/UIRow/RotateHintLabel") as Label
-@onready var flip_hint_label: Label = get_node_or_null("%UIControls/UIRow/FlipHintLabel") as Label
-@onready var reset_layout_button: Button = get_node_or_null("%UIControls/UIRow/ResetLayoutButton") as Button
+@onready var rotate_hint_label: Label = ui_controls.get_node_or_null("UIRow/RotateHintLabel") as Label
+@onready var flip_hint_label: Label = ui_controls.get_node_or_null("UIRow/FlipHintLabel") as Label
+@onready var reset_layout_button: Button = ui_controls.get_node_or_null("UIRow/ResetLayoutButton") as Button
 
 var _loaded_piece_count := 0
 var _board_state: Dictionary = {}

@@ -5,16 +5,16 @@ const BoardModel = preload("res://model/board/board_model.gd")
 
 ## Weekday indexing uses Gregorian calendar with:
 ## 0 = Sunday, 1 = Monday, ..., 6 = Saturday.
-const _WEEKDAY_LABELS := ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-const _MONTH_LABELS := ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+const _WEEKDAY_LABELS: Array[String] = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+const _MONTH_LABELS: Array[String] = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 static func get_target_cells_for_date_parts(year: int, month: int, day: int) -> Array[Dictionary]:
 	if not _is_valid_date(year, month, day):
 		return []
 
-	var month_label := _MONTH_LABELS[month - 1]
-	var date_label := str(day)
-	var weekday_label := _WEEKDAY_LABELS[_weekday_index(year, month, day)]
+	var month_label: String = _MONTH_LABELS[month - 1]
+	var date_label: String = str(day)
+	var weekday_label: String = _WEEKDAY_LABELS[_weekday_index(year, month, day)]
 
 	var month_cell := _find_cell_by_label_and_category(month_label, BoardModel.CellCategory.MONTH)
 	var date_cell := _find_cell_by_label_and_category(date_label, BoardModel.CellCategory.DATE)

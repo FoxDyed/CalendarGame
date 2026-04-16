@@ -2,6 +2,7 @@ class_name BoardView
 extends Control
 
 const BoardModel = preload("res://model/board/board_model.gd")
+const BoardDropTargeting = preload("res://model/board/board_drop_targeting.gd")
 
 const CELL_SIZE := Vector2(52, 52)
 const CELL_GAP := Vector2(4, 4)
@@ -10,10 +11,12 @@ const COLOR_EMPTY := Color("#3c5a9a")
 const COLOR_MISSING := Color("#1f1f1f")
 const COLOR_PROTECTED := Color("#2f8f4e")
 const COLOR_OCCUPIED := Color("#b36a22")
+const COLOR_PREVIEW := Color("#f0d35b")
 const COLOR_TEXT := Color("#f2f2f2")
 
 var _protected_targets: Dictionary = {}
 var _occupied_coordinates: Dictionary = {}
+var _preview_coordinates: Dictionary = {}
 var _rendered_cells_by_coordinate: Dictionary = {}
 
 func _ready() -> void:
@@ -26,6 +29,27 @@ func set_protected_target_cells(coordinates: Array[Vector2i]) -> void:
 func set_occupied_coordinates(coordinates: Array[Vector2i]) -> void:
 	_occupied_coordinates = _coordinates_to_lookup(coordinates)
 	refresh_board()
+
+func set_preview_coordinates(coordinates: Array[Vector2i]) -> void:
+	_preview_coordinates = _coordinates_to_lookup(coordinates)
+	refresh_board()
+
+func clear_preview() -> void:
+	if _preview_coordinates.is_empty():
+		return
+	_preview_coordinates.clear()
+	refresh_board()
+
+func get_preview_coordinates() -> Array[Vector2i]:
+	var coordinates: Array[Vector2i] = []
+	for coordinate in _preview_coordinates.keys():
+		coordinates.append(coordinate)
+	coordinates.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
+		if a.y == b.y:
+			return a.x < b.x
+		return a.y < b.y
+	)
+	return coordinates
 
 func clear_occupancy() -> void:
 	_occupied_coordinates.clear()
@@ -67,6 +91,19 @@ func get_cell_render_state(coordinate: Vector2i) -> String:
 		return ""
 	return _rendered_cells_by_coordinate[coordinate]["state"] as String
 
+func try_global_position_to_grid_coordinate(pointer_global_position: Vector2) -> Dictionary:
+	var local_position := get_global_transform_with_canvas().affine_inverse() * pointer_global_position
+	return BoardDropTargeting.local_position_to_grid_coordinate(
+		local_position,
+		CELL_SIZE,
+		CELL_GAP,
+		BoardModel.GRID_WIDTH,
+		BoardModel.GRID_HEIGHT
+	)
+
+func transformed_local_tiles_to_board_coordinates(local_tiles: Array[Vector2i], anchor: Vector2i) -> Array[Vector2i]:
+	return BoardDropTargeting.transformed_tiles_to_board_coordinates(local_tiles, anchor)
+
 func _build_cell_view(cell: Dictionary) -> Control:
 	var coordinate: Vector2i = cell["coordinate"]
 	var state := _resolve_cell_state(cell)
@@ -92,6 +129,8 @@ func _resolve_cell_state(cell: Dictionary) -> String:
 	var coordinate: Vector2i = cell["coordinate"]
 	if not cell["playable"]:
 		return "missing"
+	if _preview_coordinates.has(coordinate):
+		return "preview"
 	if _occupied_coordinates.has(coordinate):
 		return "occupied"
 	if _protected_targets.has(coordinate):
@@ -102,6 +141,8 @@ func _color_for_state(state: String) -> Color:
 	match state:
 		"missing":
 			return COLOR_MISSING
+		"preview":
+			return COLOR_PREVIEW
 		"occupied":
 			return COLOR_OCCUPIED
 		"protected":

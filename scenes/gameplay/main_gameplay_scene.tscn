@@ -38,9 +38,17 @@ layout_mode = 2
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="SceneTitle" type="Label" parent="RootMargin/MainLayout/UIControls/UIRow"]
+[node name="ControlsLabel" type="Label" parent="RootMargin/MainLayout/UIControls/UIRow"]
 layout_mode = 2
-text = "Gameplay Scene (Placeholder)"
+text = "Controls:"
+
+[node name="RotateHintLabel" type="Label" parent="RootMargin/MainLayout/UIControls/UIRow"]
+layout_mode = 2
+text = "Rotate: R"
+
+[node name="FlipHintLabel" type="Label" parent="RootMargin/MainLayout/UIControls/UIRow"]
+layout_mode = 2
+text = "Flip: F"
 
 [node name="StatusLabel" type="Label" parent="RootMargin/MainLayout/UIControls/UIRow"]
 layout_mode = 2
@@ -48,9 +56,9 @@ size_flags_horizontal = 3
 text = "Ready"
 horizontal_alignment = 2
 
-[node name="ActionButton" type="Button" parent="RootMargin/MainLayout/UIControls/UIRow"]
+[node name="ResetLayoutButton" type="Button" parent="RootMargin/MainLayout/UIControls/UIRow"]
 layout_mode = 2
-text = "Placeholder"
+text = "Reset Layout"
 
 [node name="PlayArea" type="HSplitContainer" parent="RootMargin/MainLayout"]
 layout_mode = 2

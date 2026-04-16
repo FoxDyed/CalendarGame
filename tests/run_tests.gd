@@ -3,6 +3,7 @@ extends SceneTree
 const BoardModelTest = preload("res://tests/board/board_model_test.gd")
 const PieceSetTest = preload("res://tests/pieces/piece_set_test.gd")
 const BoardSceneTest = preload("res://tests/board/board_scene_test.gd")
+const BoardDropTargetingTest = preload("res://tests/board/board_drop_targeting_test.gd")
 const PieceTransformTest = preload("res://tests/pieces/piece_transform_test.gd")
 const PieceSceneControllerTest = preload("res://tests/pieces/piece_scene_controller_test.gd")
 const DailyTargetSelectorTest = preload("res://tests/targets/daily_target_selector_test.gd")
@@ -23,6 +24,10 @@ func _initialize() -> void:
 	if not board_scene_test.run_all():
 		for failure in board_scene_test.failure_messages():
 			failures.append("[board_scene] %s" % failure)
+	var board_drop_targeting_test = BoardDropTargetingTest.new()
+	if not board_drop_targeting_test.run_all():
+		for failure in board_drop_targeting_test.failure_messages():
+			failures.append("[board_drop_targeting] %s" % failure)
 
 	var piece_set_test = PieceSetTest.new()
 	if not piece_set_test.run_all():

@@ -1,6 +1,9 @@
 class_name PieceController
 extends Control
 
+signal drag_moved(piece: PieceController)
+signal drag_ended(piece: PieceController)
+
 const PieceSet = preload("res://model/pieces/piece_set.gd")
 const PieceTransform = preload("res://model/pieces/piece_transform.gd")
 
@@ -65,14 +68,17 @@ func begin_drag(pointer_global_position: Vector2) -> void:
 	_is_dragging = true
 	_is_selected = true
 	_drag_pointer_offset = global_position - pointer_global_position
+	drag_moved.emit(self)
 
 func continue_drag(pointer_global_position: Vector2) -> void:
 	if not _is_dragging:
 		return
 	global_position = pointer_global_position + _drag_pointer_offset
+	drag_moved.emit(self)
 
 func end_drag() -> void:
 	_is_dragging = false
+	drag_ended.emit(self)
 
 func rotate_clockwise() -> bool:
 	if _allowed_rotations.size() <= 1:

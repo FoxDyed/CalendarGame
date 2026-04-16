@@ -15,9 +15,9 @@ const DAILY_TEST_DATE := {
 @onready var board: Control = %Board
 @onready var piece_tray: Control = %PieceTray
 @onready var ui_controls: Control = %UIControls
-@onready var rotate_hint_label: Label = %RotateHintLabel
-@onready var flip_hint_label: Label = %FlipHintLabel
-@onready var reset_layout_button: Button = %ResetLayoutButton
+@onready var rotate_hint_label: Label = get_node_or_null("%UIControls/UIRow/RotateHintLabel") as Label
+@onready var flip_hint_label: Label = get_node_or_null("%UIControls/UIRow/FlipHintLabel") as Label
+@onready var reset_layout_button: Button = get_node_or_null("%UIControls/UIRow/ResetLayoutButton") as Button
 
 var _loaded_piece_count := 0
 var _board_state: Dictionary = {}
@@ -158,7 +158,7 @@ func _refresh_board_occupancy() -> void:
 	_board_view.set_occupied_coordinates(_drop_placement_state.get_occupied_coordinates())
 
 func _set_status_text(text: String) -> void:
-	var status_label := ui_controls.get_node_or_null("StatusLabel") as Label
+	var status_label := ui_controls.get_node_or_null("UIRow/StatusLabel") as Label
 	if status_label != null:
 		status_label.text = text
 

@@ -131,5 +131,5 @@ static func _weekday_index(year: int, month: int, day: int) -> int:
 	var adjusted_year := year
 	if month < 3:
 		adjusted_year -= 1
-	var weekday_value := adjusted_year + int(adjusted_year / 4.0) - int(adjusted_year / 100.0) + int(adjusted_year / 400.0) + month_offsets[month - 1] + day
+	var weekday_value: int = adjusted_year + int(adjusted_year / 4.0) - int(adjusted_year / 100.0) + int(adjusted_year / 400.0) + int(month_offsets[month - 1]) + day
 	return weekday_value % 7

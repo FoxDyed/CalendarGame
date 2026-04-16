@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://b2jfqr1m76tbx"]
+[gd_scene load_steps=3 format=3 uid="uid://b2jfqr1m76tbx"]
 
 [ext_resource type="Script" path="res://scripts/gameplay/main_gameplay_controller.gd" id="1_3wm7k"]
+[ext_resource type="PackedScene" path="res://scenes/board/board_scene.tscn" id="2_6w5oq"]
 
 [node name="MainGameplayScene" type="Control"]
 layout_mode = 3
@@ -63,10 +64,8 @@ size_flags_horizontal = 3
 [node name="BoardCenter" type="CenterContainer" parent="RootMargin/MainLayout/PlayArea/Board"]
 layout_mode = 2
 
-[node name="BoardLabel" type="Label" parent="RootMargin/MainLayout/PlayArea/Board/BoardCenter"]
+[node name="BoardScene" parent="RootMargin/MainLayout/PlayArea/Board/BoardCenter" instance=ExtResource("2_6w5oq")]
 layout_mode = 2
-text = "Board Area\n(placeholder)"
-horizontal_alignment = 1
 
 [node name="PieceTray" type="PanelContainer" parent="RootMargin/MainLayout/PlayArea"]
 unique_name_in_owner = true

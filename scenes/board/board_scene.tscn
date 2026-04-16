@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/board/board_view.gd" id="1_y2w8j"]
+
+[node name="BoardScene" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 388.0
+offset_bottom = 444.0
+script = ExtResource("1_y2w8j")
+
+[node name="GridRoot" type="Control" parent="."]
+layout_mode = 0

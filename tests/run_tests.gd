@@ -8,6 +8,7 @@ const PieceTransformTest = preload("res://tests/pieces/piece_transform_test.gd")
 const PieceSceneControllerTest = preload("res://tests/pieces/piece_scene_controller_test.gd")
 const DailyTargetSelectorTest = preload("res://tests/targets/daily_target_selector_test.gd")
 const FoundationValidatorTest = preload("res://tests/validation/foundation_validator_test.gd")
+const PlacementValidatorTest = preload("res://tests/validation/placement_validator_test.gd")
 const MainGameplaySceneTest = preload("res://tests/scenes/main_gameplay_scene_test.gd")
 const PieceTrayControllerTest = preload("res://tests/gameplay/piece_tray_controller_test.gd")
 
@@ -53,6 +54,11 @@ func _initialize() -> void:
 	if not foundation_validator_test.run_all():
 		for failure in foundation_validator_test.failure_messages():
 			failures.append("[validation] %s" % failure)
+
+	var placement_validator_test = PlacementValidatorTest.new()
+	if not placement_validator_test.run_all():
+		for failure in placement_validator_test.failure_messages():
+			failures.append("[placement_validation] %s" % failure)
 
 	var piece_tray_controller_test = PieceTrayControllerTest.new()
 	if not piece_tray_controller_test.run_all():

@@ -2,6 +2,7 @@ extends Control
 
 const PieceTrayController = preload("res://scripts/gameplay/piece_tray_controller.gd")
 const BoardView = preload("res://scripts/board/board_view.gd")
+const PlacementValidator = preload("res://model/validation/placement_validator.gd")
 
 @onready var board: Control = %Board
 @onready var piece_tray: Control = %PieceTray
@@ -55,11 +56,13 @@ func _on_piece_drag_moved(piece: PieceController) -> void:
 		return
 
 	var anchor: Vector2i = conversion["coordinate"]
-	var preview_coordinates := _board_view.transformed_local_tiles_to_board_coordinates(
+	var validation_result := PlacementValidator.validate_transformed_placement(
 		piece.get_current_local_tile_coordinates(),
-		anchor
+		anchor,
+		_board_view.get_occupied_coordinates(),
+		_board_view.get_protected_target_coordinates()
 	)
-	_board_view.set_preview_coordinates(preview_coordinates)
+	_board_view.set_preview_validation(validation_result)
 
 func _on_piece_drag_ended(_piece: PieceController) -> void:
 	if _board_view != null:

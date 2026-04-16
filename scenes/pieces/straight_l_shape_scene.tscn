@@ -1,0 +1,27 @@
+[gd_scene format=3]
+
+[node name="StraightLShape" type="Node2D"]
+
+[node name="Tile0" type="Polygon2D" parent="."]
+color = Color(0.721569, 0.45098, 0.2, 1)
+polygon = PackedVector2Array(0, 0, 32, 0, 32, 32, 0, 32)
+
+[node name="Tile1" type="Polygon2D" parent="."]
+position = Vector2(0, 32)
+color = Color(0.721569, 0.45098, 0.2, 1)
+polygon = PackedVector2Array(0, 0, 32, 0, 32, 32, 0, 32)
+
+[node name="Tile2" type="Polygon2D" parent="."]
+position = Vector2(0, 64)
+color = Color(0.721569, 0.45098, 0.2, 1)
+polygon = PackedVector2Array(0, 0, 32, 0, 32, 32, 0, 32)
+
+[node name="Tile3" type="Polygon2D" parent="."]
+position = Vector2(0, 96)
+color = Color(0.721569, 0.45098, 0.2, 1)
+polygon = PackedVector2Array(0, 0, 32, 0, 32, 32, 0, 32)
+
+[node name="Tile4" type="Polygon2D" parent="."]
+position = Vector2(32, 96)
+color = Color(0.721569, 0.45098, 0.2, 1)
+polygon = PackedVector2Array(0, 0, 32, 0, 32, 32, 0, 32)

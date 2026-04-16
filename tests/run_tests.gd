@@ -5,6 +5,7 @@ const PieceSetTest = preload("res://tests/pieces/piece_set_test.gd")
 const PieceTransformTest = preload("res://tests/pieces/piece_transform_test.gd")
 const DailyTargetSelectorTest = preload("res://tests/targets/daily_target_selector_test.gd")
 const FoundationValidatorTest = preload("res://tests/validation/foundation_validator_test.gd")
+const MainGameplaySceneTest = preload("res://tests/scenes/main_gameplay_scene_test.gd")
 
 func _initialize() -> void:
 	var failures: Array[String] = []
@@ -33,6 +34,11 @@ func _initialize() -> void:
 	if not foundation_validator_test.run_all():
 		for failure in foundation_validator_test.failure_messages():
 			failures.append("[validation] %s" % failure)
+
+	var main_gameplay_scene_test = MainGameplaySceneTest.new()
+	if not main_gameplay_scene_test.run_all():
+		for failure in main_gameplay_scene_test.failure_messages():
+			failures.append("[scene] %s" % failure)
 
 	if failures.is_empty():
 		print("All tests passed.")

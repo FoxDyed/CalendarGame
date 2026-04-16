@@ -3,6 +3,7 @@ extends Control
 const PieceTrayController = preload("res://scripts/gameplay/piece_tray_controller.gd")
 const BoardView = preload("res://scripts/board/board_view.gd")
 const PlacementValidator = preload("res://model/validation/placement_validator.gd")
+const DropPlacementState = preload("res://model/gameplay/drop_placement_state.gd")
 
 @onready var board: Control = %Board
 @onready var piece_tray: Control = %PieceTray
@@ -12,6 +13,7 @@ var _loaded_piece_count := 0
 var _board_state: Dictionary = {}
 var _board_view: BoardView
 var _piece_tray_controller: PieceTrayController
+var _drop_placement_state := DropPlacementState.new()
 
 func _ready() -> void:
 	# Keep initialization minimal so the scene can boot before puzzle logic exists.
@@ -41,32 +43,73 @@ func _connect_piece_drag_handlers() -> void:
 		var piece := _piece_tray_controller.get_piece_by_id(piece_id)
 		if piece == null:
 			continue
+		if not piece.drag_started.is_connected(_on_piece_drag_started):
+			piece.drag_started.connect(_on_piece_drag_started)
 		if not piece.drag_moved.is_connected(_on_piece_drag_moved):
 			piece.drag_moved.connect(_on_piece_drag_moved)
 		if not piece.drag_ended.is_connected(_on_piece_drag_ended):
 			piece.drag_ended.connect(_on_piece_drag_ended)
 
+func _on_piece_drag_started(piece: PieceController) -> void:
+	if _board_view == null:
+		return
+
+	_drop_placement_state.begin_drag(piece.get_piece_id(), piece.global_position)
+	_refresh_board_occupancy()
+	_on_piece_drag_moved(piece)
+
 func _on_piece_drag_moved(piece: PieceController) -> void:
 	if _board_view == null:
 		return
 
-	var conversion := _board_view.try_global_position_to_grid_coordinate(piece.global_position)
-	if not conversion.get("is_over_board", false):
+	var candidate := _build_drop_candidate(piece)
+	if not candidate.get("is_over_board", false):
 		_board_view.clear_preview()
 		return
+
+	_board_view.set_preview_validation(candidate["validation_result"])
+
+func _on_piece_drag_ended(piece: PieceController) -> void:
+	if _board_view == null:
+		return
+
+	var candidate := _build_drop_candidate(piece)
+	if candidate.get("is_over_board", false) and (candidate["validation_result"] as Dictionary).get("valid", false):
+		var validation_result: Dictionary = candidate["validation_result"]
+		var anchor: Vector2i = candidate["anchor"]
+		var covered_coordinates := validation_result.get("covered_coordinates", []) as Array[Vector2i]
+		var snapped_global_position := _board_view.grid_coordinate_to_global_position(anchor)
+		piece.global_position = snapped_global_position
+		_drop_placement_state.commit_drop(piece.get_piece_id(), anchor, covered_coordinates, snapped_global_position)
+	else:
+		var rejection := _drop_placement_state.reject_drop(piece.get_piece_id(), piece.global_position)
+		piece.global_position = rejection.get("restore_global_position", piece.global_position)
+
+	_refresh_board_occupancy()
+	_board_view.clear_preview()
+
+func _build_drop_candidate(piece: PieceController) -> Dictionary:
+	var conversion := _board_view.try_global_position_to_grid_coordinate(piece.global_position)
+	if not conversion.get("is_over_board", false):
+		return {"is_over_board": false}
 
 	var anchor: Vector2i = conversion["coordinate"]
 	var validation_result := PlacementValidator.validate_transformed_placement(
 		piece.get_current_local_tile_coordinates(),
 		anchor,
-		_board_view.get_occupied_coordinates(),
+		_drop_placement_state.get_occupied_coordinates(),
 		_board_view.get_protected_target_coordinates()
 	)
-	_board_view.set_preview_validation(validation_result)
+	return {
+		"is_over_board": true,
+		"anchor": anchor,
+		"validation_result": validation_result,
+	}
 
-func _on_piece_drag_ended(_piece: PieceController) -> void:
-	if _board_view != null:
-		_board_view.clear_preview()
+func _refresh_board_occupancy() -> void:
+	if _board_view == null:
+		return
+	_board_view.set_occupied_coordinates(_drop_placement_state.get_occupied_coordinates())
 
 func _set_status_text(text: String) -> void:
 	var status_label := ui_controls.get_node_or_null("StatusLabel") as Label

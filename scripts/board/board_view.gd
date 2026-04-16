@@ -121,6 +121,10 @@ func try_global_position_to_grid_coordinate(pointer_global_position: Vector2) ->
 func transformed_local_tiles_to_board_coordinates(local_tiles: Array[Vector2i], anchor: Vector2i) -> Array[Vector2i]:
 	return BoardDropTargeting.transformed_tiles_to_board_coordinates(local_tiles, anchor)
 
+func grid_coordinate_to_global_position(coordinate: Vector2i) -> Vector2:
+	var local_position := _grid_to_position(coordinate)
+	return get_global_transform_with_canvas() * local_position
+
 func _build_cell_view(cell: Dictionary) -> Control:
 	var coordinate: Vector2i = cell["coordinate"]
 	var state := _resolve_cell_state(cell)

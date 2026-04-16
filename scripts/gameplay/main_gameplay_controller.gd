@@ -8,6 +8,9 @@ const DropPlacementState = preload("res://model/gameplay/drop_placement_state.gd
 @onready var board: Control = %Board
 @onready var piece_tray: Control = %PieceTray
 @onready var ui_controls: Control = %UIControls
+@onready var rotate_hint_label: Label = %RotateHintLabel
+@onready var flip_hint_label: Label = %FlipHintLabel
+@onready var reset_layout_button: Button = %ResetLayoutButton
 
 var _loaded_piece_count := 0
 var _board_state: Dictionary = {}
@@ -24,6 +27,8 @@ func _ready() -> void:
 	_board_view = board.get_node_or_null("BoardCenter/BoardScene") as BoardView
 	_piece_tray_controller = piece_tray.get_node_or_null("TrayContent/PieceTrayScene") as PieceTrayController
 	_connect_piece_drag_handlers()
+	_connect_ui_controls()
+	_refresh_transform_hints()
 
 func load_piece_placeholders(piece_definitions: Array[Dictionary]) -> void:
 	# Hook for future piece loading flow.
@@ -115,3 +120,43 @@ func _set_status_text(text: String) -> void:
 	var status_label := ui_controls.get_node_or_null("StatusLabel") as Label
 	if status_label != null:
 		status_label.text = text
+
+func _connect_ui_controls() -> void:
+	if reset_layout_button == null:
+		return
+	if not reset_layout_button.pressed.is_connected(_on_reset_layout_pressed):
+		reset_layout_button.pressed.connect(_on_reset_layout_pressed)
+
+func _on_reset_layout_pressed() -> void:
+	_reset_layout()
+
+func _reset_layout() -> void:
+	_drop_placement_state.clear_all_placements()
+	if _piece_tray_controller != null:
+		_piece_tray_controller.reset_pieces_to_spawn_positions()
+	_refresh_board_occupancy()
+	if _board_view != null:
+		_board_view.clear_preview()
+	_set_status_text("Layout reset")
+
+func _refresh_transform_hints() -> void:
+	if _piece_tray_controller == null:
+		return
+
+	var can_rotate := false
+	var can_flip := false
+	for piece_id in _piece_tray_controller.get_piece_ids():
+		var piece := _piece_tray_controller.get_piece_by_id(piece_id)
+		if piece == null:
+			continue
+		if piece.get_allowed_rotations().size() > 1:
+			can_rotate = true
+		if piece.is_flip_allowed():
+			can_flip = true
+		if can_rotate and can_flip:
+			break
+
+	if rotate_hint_label != null:
+		rotate_hint_label.text = "Rotate: %s" % ("R" if can_rotate else "N/A")
+	if flip_hint_label != null:
+		flip_hint_label.text = "Flip: %s" % ("F" if can_flip else "N/A")

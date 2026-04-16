@@ -8,6 +8,7 @@ var _failures: Array[String] = []
 func run_all() -> bool:
 	test_tray_populates_with_all_canonical_pieces_once()
 	test_piece_ids_are_unique_and_resolvable()
+	test_reset_pieces_to_spawn_positions_restores_layout()
 	return _failures.is_empty()
 
 func failure_messages() -> Array[String]:
@@ -42,6 +43,27 @@ func test_piece_ids_are_unique_and_resolvable() -> void:
 		_expect(tray.has_piece_id(piece_id), "Tray should confirm spawned IDs through lookup")
 		_expect(tray.get_piece_by_id(piece_id) != null, "Tray should return piece instances by ID")
 
+	tray.queue_free()
+
+func test_reset_pieces_to_spawn_positions_restores_layout() -> void:
+	var tray := PieceTrayScene.instantiate() as PieceTrayController
+	_expect(tray != null, "Expected PieceTray scene to instantiate for reset checks")
+	if tray == null:
+		return
+
+	tray._ready()
+	var first_piece_id := tray.get_piece_ids()[0]
+	var first_piece := tray.get_piece_by_id(first_piece_id)
+	_expect(first_piece != null, "Expected first tray piece to exist for reset checks")
+	if first_piece == null:
+		tray.queue_free()
+		return
+
+	var original_position := first_piece.position
+	first_piece.position = original_position + Vector2(91, 47)
+	tray.reset_pieces_to_spawn_positions()
+
+	_expect(first_piece.position == original_position, "Expected reset to restore moved tray piece to its spawn position")
 	tray.queue_free()
 
 func _canonical_piece_ids() -> Array[String]:

@@ -54,6 +54,14 @@ func has_piece_id(piece_id: String) -> bool:
 func get_piece_by_id(piece_id: String) -> PieceController:
 	return _pieces_by_id.get(piece_id, null)
 
+func reset_pieces_to_spawn_positions() -> void:
+	for index in _spawned_piece_ids.size():
+		var piece_id := _spawned_piece_ids[index]
+		var piece := get_piece_by_id(piece_id)
+		if piece == null:
+			continue
+		piece.position = _spawn_position_for_index(index)
+
 func _spawn_position_for_index(index: int) -> Vector2:
 	var safe_columns := maxi(columns, 1)
 	var column := index % safe_columns

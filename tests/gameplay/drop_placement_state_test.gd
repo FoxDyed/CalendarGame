@@ -8,6 +8,7 @@ func run_all() -> bool:
 	test_commit_valid_placement_updates_occupancy()
 	test_invalid_drop_restores_original_position_and_state()
 	test_repositioning_placed_piece_clears_old_occupancy_during_drag()
+	test_clear_all_placements_resets_occupancy_and_snapshots()
 	return _failures.is_empty()
 
 func failure_messages() -> Array[String]:
@@ -40,6 +41,18 @@ func test_repositioning_placed_piece_clears_old_occupancy_during_drag() -> void:
 	var rejection := state.reject_drop("T5", Vector2(700, 700))
 	_expect(rejection.get("restore_global_position") == Vector2(200, 200), "Expected invalid re-drop to return piece to previous placed position")
 	_expect(state.get_occupied_coordinates() == [Vector2i(3, 3), Vector2i(4, 3)], "Expected previous occupied cells to restore after invalid re-drop")
+
+func test_clear_all_placements_resets_occupancy_and_snapshots() -> void:
+	var state := DropPlacementState.new()
+	state.begin_drag("U5", Vector2(24, 24))
+	state.commit_drop("U5", Vector2i(5, 5), [Vector2i(5, 5), Vector2i(6, 5)], Vector2(512, 512))
+	state.begin_drag("L4", Vector2(32, 32))
+
+	state.clear_all_placements()
+
+	_expect(state.get_occupied_coordinates().is_empty(), "Expected clear_all_placements to remove all occupied cells")
+	_expect(not state.has_piece_placement("U5"), "Expected clear_all_placements to remove committed piece placements")
+	_expect(not state.has_active_drag_snapshot("L4"), "Expected clear_all_placements to remove active drag snapshots")
 
 func _expect(condition: bool, message: String) -> void:
 	if condition:

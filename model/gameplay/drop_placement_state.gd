@@ -77,3 +77,7 @@ func get_piece_placement(piece_id: String) -> Dictionary:
 
 func has_active_drag_snapshot(piece_id: String) -> bool:
 	return _drag_snapshots_by_piece_id.has(piece_id)
+
+func clear_all_placements() -> void:
+	_placements_by_piece_id.clear()
+	_drag_snapshots_by_piece_id.clear()

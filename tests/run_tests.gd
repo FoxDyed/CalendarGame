@@ -8,6 +8,7 @@ const PieceSceneControllerTest = preload("res://tests/pieces/piece_scene_control
 const DailyTargetSelectorTest = preload("res://tests/targets/daily_target_selector_test.gd")
 const FoundationValidatorTest = preload("res://tests/validation/foundation_validator_test.gd")
 const MainGameplaySceneTest = preload("res://tests/scenes/main_gameplay_scene_test.gd")
+const PieceTrayControllerTest = preload("res://tests/gameplay/piece_tray_controller_test.gd")
 
 func _initialize() -> void:
 	var failures: Array[String] = []
@@ -47,6 +48,11 @@ func _initialize() -> void:
 	if not foundation_validator_test.run_all():
 		for failure in foundation_validator_test.failure_messages():
 			failures.append("[validation] %s" % failure)
+
+	var piece_tray_controller_test = PieceTrayControllerTest.new()
+	if not piece_tray_controller_test.run_all():
+		for failure in piece_tray_controller_test.failure_messages():
+			failures.append("[piece_tray] %s" % failure)
 
 	var main_gameplay_scene_test = MainGameplaySceneTest.new()
 	if not main_gameplay_scene_test.run_all():

@@ -3,6 +3,7 @@ extends SceneTree
 const BoardModelTest = preload("res://tests/board/board_model_test.gd")
 const PieceSetTest = preload("res://tests/pieces/piece_set_test.gd")
 const PieceTransformTest = preload("res://tests/pieces/piece_transform_test.gd")
+const DailyTargetSelectorTest = preload("res://tests/targets/daily_target_selector_test.gd")
 
 func _initialize() -> void:
 	var failures: Array[String] = []
@@ -21,6 +22,11 @@ func _initialize() -> void:
 	if not piece_transform_test.run_all():
 		for failure in piece_transform_test.failure_messages():
 			failures.append("[piece_transform] %s" % failure)
+
+	var daily_target_selector_test = DailyTargetSelectorTest.new()
+	if not daily_target_selector_test.run_all():
+		for failure in daily_target_selector_test.failure_messages():
+			failures.append("[targets] %s" % failure)
 
 	if failures.is_empty():
 		print("All tests passed.")

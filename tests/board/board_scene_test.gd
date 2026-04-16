@@ -10,6 +10,7 @@ func run_all() -> bool:
 	test_board_renders_all_model_cells()
 	test_protected_and_occupied_state_updates()
 	test_preview_state_updates_and_clears()
+	test_invalid_preview_state_updates()
 	return _failures.is_empty()
 
 func failure_messages() -> Array[String]:
@@ -66,11 +67,26 @@ func test_preview_state_updates_and_clears() -> void:
 	var preview_coordinates: Array[Vector2i] = [Vector2i(2, 2), Vector2i(3, 2)]
 	instance.call("set_preview_coordinates", preview_coordinates)
 	_expect(instance.call("get_preview_coordinates") == preview_coordinates, "Expected preview coordinates to be queryable")
-	_expect(instance.call("get_cell_render_state", Vector2i(2, 2)) == "preview", "Expected preview cell to render preview state")
+	_expect(instance.call("get_cell_render_state", Vector2i(2, 2)) == "preview_valid", "Expected preview cell to render preview state")
 
 	instance.call("clear_preview")
 	_expect(instance.call("get_preview_coordinates").is_empty(), "Expected clear_preview to remove preview coordinates")
 	_expect(instance.call("get_cell_render_state", Vector2i(2, 2)) == "empty", "Expected preview cell to return to empty when preview clears")
+	instance.queue_free()
+
+
+func test_invalid_preview_state_updates() -> void:
+	var instance := BoardScene.instantiate()
+	if instance == null:
+		_expect(false, "Expected board scene to instantiate for invalid preview test")
+		return
+
+	instance.call("set_preview_validation", {
+		"valid": false,
+		"failure_reason": "out_of_bounds",
+		"covered_coordinates": [Vector2i(0, 0), Vector2i(1, 0)],
+	})
+	_expect(instance.call("get_cell_render_state", Vector2i(0, 0)) == "preview_invalid", "Expected invalid preview cell to render preview_invalid state")
 	instance.queue_free()
 
 func _expect(condition: bool, message: String) -> void:

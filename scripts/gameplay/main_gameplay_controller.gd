@@ -4,6 +4,13 @@ const PieceTrayController = preload("res://scripts/gameplay/piece_tray_controlle
 const BoardView = preload("res://scripts/board/board_view.gd")
 const PlacementValidator = preload("res://model/validation/placement_validator.gd")
 const DropPlacementState = preload("res://model/gameplay/drop_placement_state.gd")
+const DailyTargetSelector = preload("res://model/targets/daily_target_selector.gd")
+
+const DAILY_TEST_DATE := {
+	"year": 2026,
+	"month": 1,
+	"day": 15,
+}
 
 @onready var board: Control = %Board
 @onready var piece_tray: Control = %PieceTray
@@ -17,28 +24,62 @@ var _board_state: Dictionary = {}
 var _board_view: BoardView
 var _piece_tray_controller: PieceTrayController
 var _drop_placement_state := DropPlacementState.new()
+var _daily_target_cells: Array[Dictionary] = []
 
 func _ready() -> void:
-	# Keep initialization minimal so the scene can boot before puzzle logic exists.
 	if board == null or piece_tray == null or ui_controls == null:
 		push_error("MainGameplayController is missing required child regions")
 		return
 
 	_board_view = board.get_node_or_null("BoardCenter/BoardScene") as BoardView
 	_piece_tray_controller = piece_tray.get_node_or_null("TrayContent/PieceTrayScene") as PieceTrayController
+	_initialize_single_daily_puzzle()
 	_connect_piece_drag_handlers()
 	_connect_ui_controls()
 	_refresh_transform_hints()
 
 func load_piece_placeholders(piece_definitions: Array[Dictionary]) -> void:
-	# Hook for future piece loading flow.
 	_loaded_piece_count = piece_definitions.size()
 	_set_status_text("Pieces: %d" % _loaded_piece_count)
 
 func update_board_state_placeholder(board_state: Dictionary) -> void:
-	# Hook for future board state updates.
 	_board_state = board_state.duplicate(true)
 	_set_status_text("Board state keys: %d" % _board_state.size())
+
+func get_fixed_test_date() -> Dictionary:
+	return DAILY_TEST_DATE.duplicate(true)
+
+func get_daily_target_cells() -> Array[Dictionary]:
+	return _daily_target_cells.duplicate(true)
+
+func _initialize_single_daily_puzzle() -> void:
+	_drop_placement_state.clear_all_placements()
+	if _piece_tray_controller != null:
+		_piece_tray_controller.populate_from_canonical_piece_set()
+
+	_daily_target_cells = DailyTargetSelector.get_target_cells_for_date(DAILY_TEST_DATE)
+	var target_coordinates: Array[Vector2i] = []
+	for target_cell in _daily_target_cells:
+		target_coordinates.append(target_cell["coordinate"])
+
+	if _board_view != null:
+		_board_view.set_protected_target_cells(target_coordinates)
+		_board_view.set_occupied_coordinates([])
+		_board_view.clear_preview()
+
+	var labels := DailyTargetSelector.get_target_labels_for_date_parts(
+		DAILY_TEST_DATE["year"],
+		DAILY_TEST_DATE["month"],
+		DAILY_TEST_DATE["day"]
+	)
+	_set_status_text("Date %04d-%02d-%02d • %s %s %s" % [
+		DAILY_TEST_DATE["year"],
+		DAILY_TEST_DATE["month"],
+		DAILY_TEST_DATE["day"],
+		labels["month"],
+		labels["date"],
+		labels["weekday"],
+	])
 
 func _connect_piece_drag_handlers() -> void:
 	if _piece_tray_controller == null:

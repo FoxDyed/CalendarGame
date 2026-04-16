@@ -4,6 +4,7 @@ const BoardModelTest = preload("res://tests/board/board_model_test.gd")
 const PieceSetTest = preload("res://tests/pieces/piece_set_test.gd")
 const PieceTransformTest = preload("res://tests/pieces/piece_transform_test.gd")
 const DailyTargetSelectorTest = preload("res://tests/targets/daily_target_selector_test.gd")
+const FoundationValidatorTest = preload("res://tests/validation/foundation_validator_test.gd")
 
 func _initialize() -> void:
 	var failures: Array[String] = []
@@ -27,6 +28,11 @@ func _initialize() -> void:
 	if not daily_target_selector_test.run_all():
 		for failure in daily_target_selector_test.failure_messages():
 			failures.append("[targets] %s" % failure)
+
+	var foundation_validator_test = FoundationValidatorTest.new()
+	if not foundation_validator_test.run_all():
+		for failure in foundation_validator_test.failure_messages():
+			failures.append("[validation] %s" % failure)
 
 	if failures.is_empty():
 		print("All tests passed.")

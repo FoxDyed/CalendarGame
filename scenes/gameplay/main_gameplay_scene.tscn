@@ -1,0 +1,82 @@
+[gd_scene load_steps=2 format=3 uid="uid://b2jfqr1m76tbx"]
+
+[ext_resource type="Script" path="res://scripts/gameplay/main_gameplay_controller.gd" id="1_3wm7k"]
+
+[node name="MainGameplayScene" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_3wm7k")
+
+[node name="RootMargin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="MainLayout" type="VBoxContainer" parent="RootMargin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="UIControls" type="PanelContainer" parent="RootMargin/MainLayout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 72)
+layout_mode = 2
+
+[node name="UIRow" type="HBoxContainer" parent="RootMargin/MainLayout/UIControls"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="SceneTitle" type="Label" parent="RootMargin/MainLayout/UIControls/UIRow"]
+layout_mode = 2
+text = "Gameplay Scene (Placeholder)"
+
+[node name="StatusLabel" type="Label" parent="RootMargin/MainLayout/UIControls/UIRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Ready"
+horizontal_alignment = 2
+
+[node name="ActionButton" type="Button" parent="RootMargin/MainLayout/UIControls/UIRow"]
+layout_mode = 2
+text = "Placeholder"
+
+[node name="PlayArea" type="HSplitContainer" parent="RootMargin/MainLayout"]
+layout_mode = 2
+size_flags_vertical = 3
+split_offset = 420
+
+[node name="Board" type="PanelContainer" parent="RootMargin/MainLayout/PlayArea"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="BoardCenter" type="CenterContainer" parent="RootMargin/MainLayout/PlayArea/Board"]
+layout_mode = 2
+
+[node name="BoardLabel" type="Label" parent="RootMargin/MainLayout/PlayArea/Board/BoardCenter"]
+layout_mode = 2
+text = "Board Area\n(placeholder)"
+horizontal_alignment = 1
+
+[node name="PieceTray" type="PanelContainer" parent="RootMargin/MainLayout/PlayArea"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="TrayCenter" type="CenterContainer" parent="RootMargin/MainLayout/PlayArea/PieceTray"]
+layout_mode = 2
+
+[node name="TrayLabel" type="Label" parent="RootMargin/MainLayout/PlayArea/PieceTray/TrayCenter"]
+layout_mode = 2
+text = "Piece Tray Area\n(placeholder)"
+horizontal_alignment = 1

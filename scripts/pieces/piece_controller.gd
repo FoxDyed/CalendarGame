@@ -1,6 +1,7 @@
 class_name PieceController
 extends Control
 
+signal drag_started(piece: PieceController)
 signal drag_moved(piece: PieceController)
 signal drag_ended(piece: PieceController)
 
@@ -67,6 +68,7 @@ func is_dragging() -> bool:
 func begin_drag(pointer_global_position: Vector2) -> void:
 	_is_dragging = true
 	_is_selected = true
+	drag_started.emit(self)
 	_drag_pointer_offset = global_position - pointer_global_position
 	drag_moved.emit(self)
 

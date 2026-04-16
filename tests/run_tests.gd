@@ -11,6 +11,7 @@ const FoundationValidatorTest = preload("res://tests/validation/foundation_valid
 const PlacementValidatorTest = preload("res://tests/validation/placement_validator_test.gd")
 const MainGameplaySceneTest = preload("res://tests/scenes/main_gameplay_scene_test.gd")
 const PieceTrayControllerTest = preload("res://tests/gameplay/piece_tray_controller_test.gd")
+const DropPlacementStateTest = preload("res://tests/gameplay/drop_placement_state_test.gd")
 
 func _initialize() -> void:
 	var failures: Array[String] = []
@@ -64,6 +65,11 @@ func _initialize() -> void:
 	if not piece_tray_controller_test.run_all():
 		for failure in piece_tray_controller_test.failure_messages():
 			failures.append("[piece_tray] %s" % failure)
+
+	var drop_placement_state_test = DropPlacementStateTest.new()
+	if not drop_placement_state_test.run_all():
+		for failure in drop_placement_state_test.failure_messages():
+			failures.append("[drop_placement] %s" % failure)
 
 	var main_gameplay_scene_test = MainGameplaySceneTest.new()
 	if not main_gameplay_scene_test.run_all():

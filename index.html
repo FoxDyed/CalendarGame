@@ -9,13 +9,22 @@
 <body>
   <main class="app">
     <h1>Calendar Sliding Puzzle</h1>
+    <div id="tutorial" aria-live="polite"></div>
     <div class="controls">
-      <button id="resetBtn">Reset</button>
-      <button id="randomBtn">Randomize</button>
-      <button id="hintBtn">Hint</button>
-      <button id="solveBtn">Solve</button>
+      <button id="dailyBtn">Daily</button><button id="sandboxBtn">Sandbox</button>
+      <button id="resetBtn">Reset</button><button id="randomBtn">Randomize</button>
+      <button id="hintBtn">Hint</button><button id="solveBtn">Solve</button>
+      <button id="undoBtn">Undo</button><button id="redoBtn">Redo</button>
+      <button id="shareBtn">Share Seed</button>
     </div>
+    <div class="stats">Moves: <span id="moveCount">0</span> · Time: <span id="timer">00:00</span> · Streak: <span id="streak">0</span></div>
+    <div id="hint" aria-live="polite"></div>
     <section id="board" aria-label="Calendar puzzle board"></section>
+    <fieldset class="a11y"><legend>Accessibility</legend>
+      <label><input id="highContrast" type="checkbox"> High contrast</label>
+      <label><input id="largerText" type="checkbox"> Larger text</label>
+      <label><input id="reducedMotion" type="checkbox"> Reduced motion</label>
+    </fieldset>
     <pre id="debug"></pre>
   </main>
   <script type="module" src="src/main.ts"></script>

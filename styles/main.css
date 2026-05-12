@@ -65,3 +65,8 @@ button { min-height: 44px; border-radius: 12px; border: 1px solid #7b6540; backg
   .app { grid-template-columns: 1fr 1fr; align-items: start; }
   .controls { grid-column: 1 / -1; }
 }
+.stats,#hint,#tutorial{background:#efe2c8;padding:8px;border-radius:8px}
+.a11y{border:1px solid #7b6540;border-radius:8px;padding:8px;display:grid;gap:6px}
+.high-contrast{--bg:#111;color:#fff}.high-contrast #board{border-color:#fff}
+.large-text{font-size:20px}
+.reduced-motion .piece{transition:none !important}

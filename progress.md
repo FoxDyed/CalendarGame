@@ -17,3 +17,5 @@
 - Add touch drag controls and keyboard accessibility.
 - Add Playwright interactive E2E and screenshots.
 - Add daily challenge mode and calm sound effects.
+
+- Retried Playwright Chromium install after permission update request; still blocked by CDN 403 in this environment.

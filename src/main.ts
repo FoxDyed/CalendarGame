@@ -6,17 +6,16 @@ import { mulberry32 } from './core/rng.js';
 
 const state = loadState() ?? createAppState();
 const rng = mulberry32(state.seed);
+const audioCtx = state.accessibility.soundEnabled ? new AudioContext() : null;
 
 function playTick() {
-  if (state.accessibility.soundEnabled) {
-    const ctx = new AudioContext();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'triangle'; osc.frequency.value = 420;
-    gain.gain.value = 0.02;
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.start(); osc.stop(ctx.currentTime + 0.05);
-  }
+  if (!state.accessibility.soundEnabled || !audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'triangle'; osc.frequency.value = 420;
+  gain.gain.value = 0.02;
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start(); osc.stop(audioCtx.currentTime + 0.05);
 }
 
 function formatElapsed(ms: number): string {
@@ -39,8 +38,9 @@ function applyMove(move: MoveRecord, track = true): boolean {
 
 function rerender() {
   if (state.timerRunning && state.timerStartedAt) {
-    state.elapsedMs += Date.now() - state.timerStartedAt;
-    state.timerStartedAt = Date.now();
+    const now = performance.now();
+    state.elapsedMs += now - state.timerStartedAt;
+    state.timerStartedAt = now;
   }
 
   const dailyId = todayDailyId();
@@ -59,77 +59,49 @@ function rerender() {
   saveState(state);
 }
 
-setInterval(() => rerender(), 1000);
-
-document.getElementById('resetBtn')!.addEventListener('click', () => {
-  state.puzzle = createAppState().puzzle;
-  state.moveCount = 0;
-  state.elapsedMs = 0;
-  state.undoStack = [];
-  state.redoStack = [];
-  rerender();
-});
-
-document.getElementById('randomBtn')!.addEventListener('click', () => {
-  randomize(state.puzzle, rng);
-  rerender();
-});
-
-document.getElementById('hintBtn')!.addEventListener('click', () => {
-  const m = legalMoves(state.puzzle)[0];
-  state.hintText = m ? `Try moving ${m.pieceId} by ${m.delta > 0 ? '+1' : '-1'}` : 'No legal moves';
-  rerender();
-});
-
-document.getElementById('solveBtn')!.addEventListener('click', () => {
-  state.puzzle = createAppState().puzzle;
-  rerender();
-});
-
-document.getElementById('undoBtn')!.addEventListener('click', () => {
-  const mv = state.undoStack.pop();
-  if (!mv) return;
-  if (movePiece(state.puzzle, mv.pieceId, -mv.delta)) {
-    state.redoStack.push(mv);
+function bindEvents() {
+  document.getElementById('resetBtn')?.addEventListener('click', () => {
+    state.puzzle = createAppState().puzzle;
+    state.moveCount = 0;
+    state.elapsedMs = 0;
+    state.undoStack = [];
+    state.redoStack = [];
     rerender();
-  }
-});
+  });
 
-document.getElementById('redoBtn')!.addEventListener('click', () => {
-  const mv = state.redoStack.pop();
-  if (!mv) return;
-  if (applyMove(mv, false)) {
-    state.undoStack.push(mv);
+  document.getElementById('randomBtn')?.addEventListener('click', () => { randomize(state.puzzle, rng); rerender(); });
+
+  document.getElementById('hintBtn')?.addEventListener('click', () => {
+    const m = legalMoves(state.puzzle)[0];
+    state.hintText = m ? `Try moving ${m.pieceId} by ${m.delta > 0 ? '+1' : '-1'}` : 'No legal moves';
     rerender();
-  }
-});
+  });
 
-document.getElementById('shareBtn')!.addEventListener('click', async () => {
-  const url = `${location.origin}${location.pathname}?seed=${state.seed}`;
-  await navigator.clipboard.writeText(url);
-});
+  document.getElementById('solveBtn')?.addEventListener('click', () => { state.puzzle = createAppState().puzzle; rerender(); });
+  document.getElementById('undoBtn')?.addEventListener('click', () => { const mv = state.undoStack.pop(); if (mv && movePiece(state.puzzle, mv.pieceId, -mv.delta)) { state.redoStack.push(mv); rerender(); } });
+  document.getElementById('redoBtn')?.addEventListener('click', () => { const mv = state.redoStack.pop(); if (mv && applyMove(mv, false)) { state.undoStack.push(mv); rerender(); } });
 
-document.getElementById('dailyBtn')!.addEventListener('click', () => { state.mode = 'daily'; rerender(); });
-document.getElementById('sandboxBtn')!.addEventListener('click', () => { state.mode = 'sandbox'; rerender(); });
+  document.getElementById('shareBtn')?.addEventListener('click', async () => {
+    const url = `${location.origin}${location.pathname}?seed=${state.seed}`;
+    if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(url);
+  });
 
-document.getElementById('reducedMotion')!.addEventListener('change', (e) => {
-  state.accessibility.reducedMotion = (e.target as HTMLInputElement).checked;
-  rerender();
-});
+  document.getElementById('dailyBtn')?.addEventListener('click', () => { state.mode = 'daily'; rerender(); });
+  document.getElementById('sandboxBtn')?.addEventListener('click', () => { state.mode = 'sandbox'; rerender(); });
 
-document.getElementById('highContrast')!.addEventListener('change', (e) => {
-  state.accessibility.highContrast = (e.target as HTMLInputElement).checked;
-  rerender();
-});
+  document.getElementById('reducedMotion')?.addEventListener('change', (e) => { state.accessibility.reducedMotion = (e.target as HTMLInputElement).checked; rerender(); });
+  document.getElementById('highContrast')?.addEventListener('change', (e) => { state.accessibility.highContrast = (e.target as HTMLInputElement).checked; rerender(); });
+  document.getElementById('largerText')?.addEventListener('change', (e) => { state.accessibility.largerText = (e.target as HTMLInputElement).checked; rerender(); });
 
-document.getElementById('largerText')!.addEventListener('change', (e) => {
-  state.accessibility.largerText = (e.target as HTMLInputElement).checked;
-  rerender();
-});
+  addEventListener('resize', () => requestAnimationFrame(rerender), { passive: true });
+}
 
-if (new URLSearchParams(location.search).get('seed')) {
-  state.seed = Number(new URLSearchParams(location.search).get('seed'));
+const seedParam = new URLSearchParams(location.search).get('seed');
+if (seedParam) {
+  state.seed = Number(seedParam);
   randomize(state.puzzle, mulberry32(state.seed));
 }
 
+bindEvents();
+setInterval(rerender, 1000);
 rerender();

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calendar Sliding Puzzle</title>
+  <link rel="stylesheet" href="styles/main.css" />
+</head>
+<body>
+  <main class="app">
+    <h1>Calendar Sliding Puzzle</h1>
+    <div class="controls">
+      <button id="resetBtn">Reset</button>
+      <button id="randomBtn">Randomize</button>
+      <button id="hintBtn">Hint</button>
+      <button id="solveBtn">Solve</button>
+    </div>
+    <section id="board" aria-label="Calendar puzzle board"></section>
+    <pre id="debug"></pre>
+  </main>
+  <script type="module" src="src/main.ts"></script>
+</body>
+</html>

@@ -1,5 +1,10 @@
 export type Axis = 'x' | 'y';
 
+export interface Cell {
+  x: number;
+  y: number;
+}
+
 export interface Piece {
   id: string;
   axis: Axis;
@@ -15,5 +20,17 @@ export interface PuzzleState {
   height: number;
   pieces: Piece[];
   monthIndex: number;
+  day: number;
+}
+
+export interface Move {
+  pieceId: string;
+  delta: number;
+}
+
+export interface VisibilityWindow {
+  monthCell: Cell;
+  dayCell: Cell;
+  month: string;
   day: number;
 }

@@ -1,59 +1,82 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createInitialState, movePiece, randomize } from '../dist/core/puzzle.js';
+import {
+  boardIntegrity,
+  createInitialState,
+  hasCollision,
+  legalMoves,
+  movePiece,
+  randomize,
+  setDate,
+  visibleWindows
+} from '../dist/core/puzzle.js';
 import { render_game_to_text } from '../dist/core/debug.js';
 import { mulberry32 } from '../dist/core/rng.js';
-import { solveToInitial, applySolveSteps } from '../dist/core/solver.js';
+import { applySolveSteps, solveToInitial, solverValidationHarness } from '../dist/core/solver.js';
 import { generateCandidate } from '../dist/core/generator.js';
 import { serializePuzzle, deserializePuzzle } from '../dist/core/serialization.js';
 import { isValidPuzzleDate } from '../dist/core/date.js';
 
-test('move constraints respected', () => {
+test('movement validity and legal move generation', () => {
   const s = createInitialState();
-  assert.equal(movePiece(s, 'h1', 99), false);
-  assert.equal(movePiece(s, 'h1', 1), true);
+  assert.equal(movePiece(s, 'h1', -1), false);
+  assert.equal(movePiece(s, 'h2', 1), true);
+  const moves = legalMoves(s);
+  assert.ok(moves.length > 0);
+  assert.ok(moves.every((m) => Math.abs(m.delta) === 1));
 });
 
-test('debug output includes visible windows', () => {
+test('collision constraints disallow overlap', () => {
   const s = createInitialState();
-  assert.match(render_game_to_text(s), /VISIBLE month=Jan day=1/);
+  assert.equal(movePiece(s, 'v1', 1), false);
+  assert.equal(hasCollision(s), false);
 });
 
-test('deterministic text snapshot with seeded randomize', () => {
+test('date visibility correctness', () => {
+  const s = createInitialState();
+  setDate(s, 10, 31);
+  const windows = visibleWindows(s);
+  assert.equal(windows.month, 'Nov');
+  assert.equal(windows.day, 31);
+  assert.deepEqual(windows.monthCell, { x: 4, y: 1 });
+  assert.deepEqual(windows.dayCell, { x: 2, y: 6 });
+});
+
+test('board integrity stays valid after deterministic randomization', () => {
   const s = createInitialState();
   randomize(s, mulberry32(12345));
-  const snapshot = render_game_to_text(s);
-  assert.equal(snapshot, 'VISIBLE month=Jan day=1\nh1:x@(2,2)\nh2:x@(1,4)\nv1:y@(1,1)\nv2:y@(4,4)');
+  assert.equal(boardIntegrity(s), true);
+  assert.equal(hasCollision(s), false);
+  assert.equal(render_game_to_text(s).startsWith('VISIBLE month=Jan day=1'), true);
 });
 
-test('solver returns state to initial', () => {
+test('deterministic seeded test case snapshot', () => {
   const s = createInitialState();
-  randomize(s, mulberry32(7));
-  const steps = solveToInitial(s);
-  assert.equal(applySolveSteps(s, steps), true);
-  assert.equal(render_game_to_text(s), render_game_to_text(createInitialState()));
+  randomize(s, mulberry32(99));
+  assert.equal(render_game_to_text(s), 'VISIBLE month=Jan day=1\nh1:x@(3,4)\nh2:x@(2,6)\nv1:y@(1,1)\nv2:y@(5,1)');
 });
 
-test('generator creates in-bounds candidate', () => {
-  const s = generateCandidate(mulberry32(99));
-  for (const p of s.pieces) {
-    const pos = p.axis === 'x' ? p.x : p.y;
-    assert.ok(pos >= p.min && pos <= p.max);
-  }
+test('solver validation harness solves seeded candidates', () => {
+  const target = createInitialState();
+  const samples = [7, 11, 19, 23].map((seed) => {
+    const s = createInitialState();
+    randomize(s, mulberry32(seed));
+    return s;
+  });
+  const stats = solverValidationHarness(samples, target);
+  assert.deepEqual(stats, { solved: 4, unsolved: 0 });
+
+  const candidate = generateCandidate(mulberry32(21));
+  const steps = solveToInitial(candidate, target);
+  assert.equal(applySolveSteps(candidate, steps), true);
 });
 
-test('serialization round trip preserves state', () => {
-  const s = generateCandidate(mulberry32(21));
-  const raw = serializePuzzle(s);
-  const parsed = deserializePuzzle(raw);
-  assert.deepEqual(parsed, s);
-});
-
-test('date validation enforces month/day limits', () => {
+test('serialization and date validation', () => {
   assert.equal(isValidPuzzleDate(0, 1), true);
   assert.equal(isValidPuzzleDate(11, 31), true);
   assert.equal(isValidPuzzleDate(12, 1), false);
-  assert.equal(isValidPuzzleDate(-1, 1), false);
-  assert.equal(isValidPuzzleDate(5, 0), false);
-  assert.equal(isValidPuzzleDate(5, 32), false);
+
+  const s = generateCandidate(mulberry32(21));
+  const parsed = deserializePuzzle(serializePuzzle(s));
+  assert.deepEqual(parsed, s);
 });

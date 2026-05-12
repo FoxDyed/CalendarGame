@@ -5,7 +5,7 @@
 - **Application state layer (`src/app`)**: game session state, UI mode state, persistence adapter, challenge mode orchestration.
 - **Rendering layer (`src/ui`)**: DOM-based board renderer + animation controller + accessibility bindings.
 - **Interaction layer (`src/input`)**: unified pointer/touch/keyboard drag/slide controller.
-- **Testing layer (`tests`)**: unit tests for core logic + Playwright E2E smoke/regression.
+- **Testing layer (`tests`)**: unit tests for core logic + Playwright E2E smoke/regression (conditionally run when Chromium is available).
 
 ## 2) Rendering approach
 - DOM/CSS Grid for mobile-first responsiveness.
@@ -46,21 +46,27 @@
 - Snap to legal discrete step on release.
 - Haptic-like feel via easing and subtle click sound.
 
-## 9) Playwright testing strategy
-- Smoke: load app, no console errors.
-- Interaction: drag piece, verify state text output updates.
-- Feature tests: reset/randomize/hint/solve controls.
-- Invariant: exactly one month and one day visible.
+## 9) Testing strategy (restricted environment)
+- Playwright is optional when browser binaries are unavailable.
+- Browser gate: `npm run check:playwright` before E2E.
+- If Chromium unavailable, skip E2E gracefully and continue with unit coverage.
+- Keep Playwright test files in repo and mark behavior as conditional skip.
+- Non-browser required coverage: puzzle logic, solver, generator, serialization, date validation.
+- Deterministic text-mode render snapshot tests are mandatory in CI fallback mode.
+- Preserve `.logs/12_playwright_install_retry.log` evidence.
+- Local developer note: run Playwright E2E on machines where `npx playwright install chromium` succeeds.
 
 ## 10) File structure
 - `index.html`
 - `src/main.ts`
-- `src/core/{types.ts,rng.ts,puzzle.ts,solver.ts,generator.ts,date.ts,debug.ts}`
+- `src/core/{types.ts,rng.ts,puzzle.ts,solver.ts,generator.ts,date.ts,serialization.ts,debug.ts}`
 - `src/app/{state.ts,persistence.ts,actions.ts}`
 - `src/ui/{render.ts,animations.ts,a11y.ts}`
 - `src/input/{drag.ts}`
 - `styles/main.css`
-- `tests/{core.test.ts,e2e.spec.ts}`
+- `tests/{core.test.mjs,smoke-playwright.mjs}`
+- `scripts/{check-playwright.mjs}`
+- `TEST_STRATEGY.md`
 - `.logs/`
 - `progress.md`
 
@@ -72,12 +78,13 @@
 5. Add generator + validation sweep.
 6. Add persistence + challenge mode.
 7. Add accessibility polish + animations + sound.
-8. Add Playwright + unit tests.
+8. Add unit tests + optional Playwright path with browser availability gating.
 
 ## 12) Risk analysis
 - Solver performance for 372-date validation may be heavy.
 - Drag UX jitter on low-end mobile.
 - Ensuring generated layouts remain solvable across all dates.
+- CI environments may block Chromium CDN; fallback path must keep validation coverage high.
 
 ## 13) Performance targets
 - First render < 1.5s on mid-tier mobile.

@@ -1,0 +1,5 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+added 3 packages, and audited 5 packages in 2s
+
+found 0 vulnerabilities

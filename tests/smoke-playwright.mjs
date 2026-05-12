@@ -18,13 +18,42 @@ try {
   process.exit(0);
 }
 
-const page = await browser.newPage();
-const errors = [];
-page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
-await page.goto('http://127.0.0.1:4173', { waitUntil: 'networkidle' });
-await page.click('#randomBtn');
-await page.click('#hintBtn');
-await page.screenshot({ path: '.logs/board.png', fullPage: true });
-const debug = await page.textContent('#debug');
-fs.writeFileSync('.logs/08_playwright_debug.log', `errors=${errors.length}\n${errors.join('\n')}\n\n${debug}\n`);
+const log = [];
+const viewports = [
+  { name: 'mobile-portrait', viewport: { width: 390, height: 844 }, dpr: 3, hasTouch: true },
+  { name: 'mobile-landscape', viewport: { width: 844, height: 390 }, dpr: 3, hasTouch: true },
+  { name: 'desktop', viewport: { width: 1280, height: 800 }, dpr: 2, hasTouch: false }
+];
+
+for (const cfg of viewports) {
+  const context = await browser.newContext({
+    viewport: cfg.viewport,
+    deviceScaleFactor: cfg.dpr,
+    hasTouch: cfg.hasTouch,
+    isMobile: cfg.hasTouch
+  });
+  const page = await context.newPage();
+  await page.goto('http://127.0.0.1:4173', { waitUntil: 'networkidle' });
+
+  const piece = page.locator('.piece').first();
+  const box = await piece.boundingBox();
+  if (!box) throw new Error(`missing piece in ${cfg.name}`);
+
+  if (cfg.hasTouch) {
+    await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+    await page.touchscreen.tap(box.x + box.width / 2 + 40, box.y + box.height / 2);
+  }
+
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 + 40, box.y + box.height / 2, { steps: 8 });
+  await page.mouse.up();
+
+  const board = await page.locator('#board').boundingBox();
+  log.push(`${cfg.name}: board=${Math.round(board.width)}x${Math.round(board.height)} dpr=${cfg.dpr}`);
+  await page.screenshot({ path: `.logs/render-${cfg.name}.png`, fullPage: true });
+  await context.close();
+}
+
+fs.writeFileSync('.logs/09_playwright_rendering.log', log.join('\n') + '\n');
 await browser.close();

@@ -37,7 +37,7 @@
 ## 7) Generation strategy
 - Seedable RNG (Mulberry32).
 - Generate puzzle layout variants from template rails + piece lengths.
-- Validate full date coverage by solver sweep over all 372 dates.
+- Validate full date coverage by solver sweep over all 365 non-leap-year dates.
 - Keep only layouts passing constraints and target difficulty range.
 
 ## 8) Touch interaction model
@@ -81,7 +81,7 @@
 8. Add unit tests + optional Playwright path with browser availability gating.
 
 ## 12) Risk analysis
-- Solver performance for 372-date validation may be heavy.
+- Solver performance for 365-date validation may be heavy.
 - Drag UX jitter on low-end mobile.
 - Ensuring generated layouts remain solvable across all dates.
 - CI environments may block Chromium CDN; fallback path must keep validation coverage high.

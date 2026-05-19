@@ -14,4 +14,17 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npm run ci:validate
+      - run: npm run build
+      - run: npm test
+      - run: |
+          mkdir -p .logs
+          npm run serve &
+          SERVER_PID=$!
+          for i in {1..20}; do
+            if curl -fsS http://127.0.0.1:4173 >/dev/null; then
+              break
+            fi
+            sleep 0.25
+          done
+          npm run test:regression
+          kill $SERVER_PID

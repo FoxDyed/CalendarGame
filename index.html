@@ -3,23 +3,36 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Calendar Sliding Puzzle</title>
+  <title>Calendar Puzzle</title>
   <link rel="stylesheet" href="styles/main.css" />
 </head>
 <body>
   <main class="app">
-    <h1>Calendar Sliding Puzzle</h1>
+    <h1>Calendar Puzzle</h1>
     <div id="tutorial" aria-live="polite"></div>
     <div class="controls">
-      <button id="dailyBtn">Daily</button><button id="sandboxBtn">Sandbox</button>
+      <button id="dailyBtn">Daily</button>
       <button id="resetBtn">Reset</button><button id="randomBtn">Randomize</button>
-      <button id="hintBtn">Hint</button><button id="solveBtn">Solve</button>
-      <button id="undoBtn">Undo</button><button id="redoBtn">Redo</button>
+      <button id="hintBtn">Hint</button>
       <button id="shareBtn">Share Seed</button>
+    </div>
+    <div class="date-controls">
+      <label for="dateInput">Date</label>
+      <input id="dateInput" type="date">
+      <button id="todayBtn">Today</button>
     </div>
     <div class="stats">Moves: <span id="moveCount">0</span> · Time: <span id="timer">00:00</span> · Streak: <span id="streak">0</span></div>
     <div id="hint" aria-live="polite"></div>
-    <section id="board" aria-label="Calendar puzzle board"></section>
+    <div class="board-zone">
+      <section id="board" aria-label="Calendar puzzle board"></section>
+      <div class="piece-controls" aria-label="Piece controls">
+        <button id="rotateBtn">Rotate</button>
+        <button id="clearBtn">Clear Piece</button>
+        <button id="redoBtn">Redo</button>
+        <button id="acceptBtn">Accept</button>
+      </div>
+    </div>
+    <section id="tray" aria-label="Puzzle piece tray"></section>
     <fieldset class="a11y"><legend>Accessibility</legend>
       <label><input id="highContrast" type="checkbox"> High contrast</label>
       <label><input id="largerText" type="checkbox"> Larger text</label>
@@ -27,6 +40,6 @@
     </fieldset>
     <pre id="debug"></pre>
   </main>
-  <script type="module" src="src/main.ts"></script>
+  <script type="module" src="dist/main.js"></script>
 </body>
 </html>

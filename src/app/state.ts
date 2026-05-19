@@ -1,7 +1,19 @@
-import { PuzzleState } from '../core/types.js';
-import { createInitialState } from '../core/puzzle.js';
+import type { Cell, PuzzleState } from '../core/types.js';
+import { createInitialState, setDate } from '../core/puzzle.js';
 
-export interface MoveRecord { pieceId: string; delta: number }
+export interface MoveRecord {
+  pieceId: string;
+  from: Cell | null;
+  to: Cell | null;
+  rotation: number;
+}
+
+export interface PendingPlacement {
+  pieceId: string;
+  origin: Cell;
+  valid: boolean;
+  source: Cell | null;
+}
 
 export interface AccessibilityOptions {
   highContrast: boolean;
@@ -23,6 +35,7 @@ export interface AppState {
   mode: 'daily' | 'sandbox';
   undoStack: MoveRecord[];
   redoStack: MoveRecord[];
+  pendingPlacement: PendingPlacement | null;
   hintText: string;
   tutorialCompleted: boolean;
   showTutorial: boolean;
@@ -30,24 +43,32 @@ export interface AppState {
 }
 
 export function todayDailyId(): string {
-  return new Date().toISOString().slice(0, 10);
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 export function createAppState(): AppState {
+  const puzzle = createInitialState();
+  const today = new Date();
+  setDate(puzzle, today.getMonth(), today.getDate());
   return {
-    puzzle: createInitialState(),
+    puzzle,
     seed: 12345,
     moveCount: 0,
     elapsedMs: 0,
     timerRunning: true,
-    timerStartedAt: Date.now(),
+    timerStartedAt: typeof performance === 'undefined' ? 0 : performance.now(),
     streak: 0,
     lastDailyId: null,
     completedDailyIds: [],
     mode: 'daily',
     undoStack: [],
     redoStack: [],
-    hintText: '',
+    pendingPlacement: null,
+    hintText: 'Pick a piece, rotate it if needed, then place it on the calendar without covering today.',
     tutorialCompleted: false,
     showTutorial: true,
     accessibility: { highContrast: false, largerText: false, reducedMotion: false, soundEnabled: true }

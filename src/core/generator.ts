@@ -1,4 +1,4 @@
-import { PuzzleState } from './types.js';
+import type { PuzzleState } from './types.js';
 import { createInitialState, randomize, setDate } from './puzzle.js';
 import { solveWithAStar } from './solver.js';
 

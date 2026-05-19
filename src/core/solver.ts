@@ -1,4 +1,4 @@
-import { Move, PuzzleState } from './types.js';
+import type { Move, PuzzleState } from './types.js';
 import { legalMoves, movePiece } from './puzzle.js';
 
 export interface SolveStep extends Move {}

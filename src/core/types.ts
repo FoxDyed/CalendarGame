@@ -1,18 +1,22 @@
-export type Axis = 'x' | 'y';
-
 export interface Cell {
   x: number;
   y: number;
 }
 
+export interface CalendarCell extends Cell {
+  id: string;
+  label: string;
+  kind: 'month' | 'day' | 'blocked';
+}
+
 export interface Piece {
   id: string;
-  axis: Axis;
-  length: number;
-  x: number;
-  y: number;
-  min: number;
-  max: number;
+  name: string;
+  color: string;
+  cells: Cell[];
+  rotation: number;
+  x: number | null;
+  y: number | null;
 }
 
 export interface PuzzleState {
@@ -21,11 +25,14 @@ export interface PuzzleState {
   pieces: Piece[];
   monthIndex: number;
   day: number;
+  selectedPieceId: string | null;
 }
 
 export interface Move {
   pieceId: string;
-  delta: number;
+  from: Cell | null;
+  to: Cell | null;
+  rotation: number;
 }
 
 export interface VisibilityWindow {

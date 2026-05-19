@@ -1,8 +1,11 @@
-import { PuzzleState } from './types.js';
-import { visibleWindows } from './puzzle.js';
+import type { PuzzleState } from './types.js';
+import { getTransformedCells, isSolved, visibleWindows } from './puzzle.js';
 
 export function render_game_to_text(state: PuzzleState): string {
   const v = visibleWindows(state);
-  const pieces = state.pieces.map((p) => `${p.id}:${p.axis}@(${p.x},${p.y})`).join('\n');
-  return `VISIBLE month=${v.month} day=${v.day}\n${pieces}`;
+  const pieces = state.pieces.map((p) => {
+    const location = p.x === null || p.y === null ? 'tray' : `@(${p.x},${p.y})`;
+    return `${p.id}:${location}:r${p.rotation}:${getTransformedCells(p).map((c) => `${c.x},${c.y}`).join(' ')}`;
+  }).join('\n');
+  return `OPEN month=${v.month} day=${v.day} solved=${isSolved(state)}\n${pieces}`;
 }

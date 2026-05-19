@@ -1,4 +1,4 @@
-import { PuzzleState } from './types.js';
+import type { PuzzleState } from './types.js';
 
 interface Envelope {
   version: 1;

@@ -1,9 +1,10 @@
-import { AppState } from '../app/state.js';
+import type { AppState } from '../app/state.js';
 import { render_game_to_text } from '../core/debug.js';
-import { Piece } from '../core/types.js';
+import { createCalendarCells, getTransformedCells, visibleWindows } from '../core/puzzle.js';
+import type { Cell, Piece } from '../core/types.js';
 
-const CELL_SIZE = 56;
 const boardEl = document.getElementById('board') as HTMLElement;
+const trayEl = document.getElementById('tray') as HTMLElement;
 const moveCountEl = document.getElementById('moveCount') as HTMLElement;
 const timerEl = document.getElementById('timer') as HTMLElement;
 const streakEl = document.getElementById('streak') as HTMLElement;
@@ -11,75 +12,278 @@ const hintEl = document.getElementById('hint') as HTMLElement;
 const debugEl = document.getElementById('debug') as HTMLElement;
 const tutorialEl = document.getElementById('tutorial') as HTMLElement;
 
-let dragPieceId: string | null = null;
-let dragStartClient = 0;
-let dragPixels = 0;
-let dragAxis: 'x' | 'y' | null = null;
-let dragState: AppState | null = null;
-let moveFn: ((pieceId: string, delta: number) => void) | null = null;
-const pieceEls = new Map<string, HTMLElement>();
-let lastSnapshot = '';
-
-function getPieceStyle(piece: Piece): [string, string, string, string] {
-  const x = `${piece.x * CELL_SIZE}px`;
-  const y = `${piece.y * CELL_SIZE}px`;
-  const w = `${(piece.axis === 'x' ? piece.length : 1) * CELL_SIZE}px`;
-  const h = `${(piece.axis === 'y' ? piece.length : 1) * CELL_SIZE}px`;
-  return [x, y, w, h];
+interface RenderActions {
+  onChange: () => void;
+  onSelect: (pieceId: string) => void;
+  onPreview: (pieceId: string, origin: Cell, source: Cell | null) => void;
+  onReturnToTray: (pieceId: string) => void;
 }
 
-function createPieceEl(p: Piece): HTMLElement {
-  const el = document.createElement('div');
-  el.className = `piece ${p.axis}`;
-  el.setAttribute('role', 'button');
-  el.tabIndex = 0;
-  el.setAttribute('aria-label', `Piece ${p.id}`);
-  el.textContent = p.id;
-  el.dataset.pieceId = p.id;
+let stateRef: AppState | null = null;
+let actionsRef: RenderActions | null = null;
+let drag: { id: string; pointerId: number; offsetX: number; offsetY: number; source: Cell | null } | null = null;
+let lastSnapshot = '';
+
+function cellKey(cell: Cell): string {
+  return `${cell.x},${cell.y}`;
+}
+
+function getBoardMetrics(): { size: number; left: number; top: number; right: number; bottom: number } {
+  const rect = boardEl.getBoundingClientRect();
+  const styles = getComputedStyle(boardEl);
+  const paddingLeft = Number.parseFloat(styles.paddingLeft);
+  const paddingRight = Number.parseFloat(styles.paddingRight);
+  const paddingTop = Number.parseFloat(styles.paddingTop);
+  const paddingBottom = Number.parseFloat(styles.paddingBottom);
+  const contentWidth = rect.width - paddingLeft - paddingRight;
+  const contentHeight = rect.height - paddingTop - paddingBottom;
+  return {
+    size: contentWidth / 7,
+    left: rect.left + paddingLeft,
+    top: rect.top + paddingTop,
+    right: rect.left + paddingLeft + contentWidth,
+    bottom: rect.top + paddingTop + contentHeight
+  };
+}
+
+function getCellSize(): number {
+  return getBoardMetrics().size;
+}
+
+function pieceBounds(piece: Piece): { cols: number; rows: number } {
+  const cells = getTransformedCells({ ...piece, x: null, y: null });
+  return {
+    cols: Math.max(...cells.map((c) => c.x)) + 1,
+    rows: Math.max(...cells.map((c) => c.y)) + 1
+  };
+}
+
+function createPieceElement(piece: Piece, inTray: boolean): HTMLElement {
+  const el = document.createElement('button');
+  el.className = `piece ${inTray ? 'in-tray' : 'on-board'}`;
+  el.dataset.pieceId = piece.id;
+  el.type = 'button';
+  el.setAttribute('aria-label', `${piece.name} piece`);
+  el.innerHTML = '';
   return el;
 }
 
-function bind(state: AppState, onMove: (pieceId: string, delta: number) => void) {
-  dragState = state; moveFn = onMove;
-  if (boardEl.dataset.bound === '1') return;
-  boardEl.dataset.bound = '1';
-  boardEl.addEventListener('pointerdown', (ev) => {
-    const target = (ev.target as HTMLElement).closest('.piece') as HTMLElement | null;
-    if (!target || !dragState) return;
-    const id = target.dataset.pieceId;
-    if (!id) return;
-    const p = dragState.puzzle.pieces.find((q) => q.id === id);
-    if (!p) return;
-    dragPieceId = id; dragAxis = p.axis;
-    dragStartClient = p.axis === 'x' ? ev.clientX : ev.clientY;
-    dragPixels = 0;
-  }, { passive: true });
-  boardEl.addEventListener('pointermove', (ev) => {
-    if (!dragAxis) return;
-    const current = dragAxis === 'x' ? ev.clientX : ev.clientY;
-    dragPixels = current - dragStartClient;
-  }, { passive: true });
-  boardEl.addEventListener('pointerup', () => {
-    if (!dragPieceId || !moveFn) return;
-    const delta = Math.max(-1, Math.min(1, Math.round(dragPixels / CELL_SIZE)));
-    if (delta !== 0) moveFn(dragPieceId, delta);
-    dragPieceId = null; dragAxis = null; dragPixels = 0;
-  }, { passive: true });
+function renderPieceShape(el: HTMLElement, piece: Piece, unit: number): void {
+  const bounds = pieceBounds(piece);
+  el.style.setProperty('--piece-cols', String(bounds.cols));
+  el.style.setProperty('--piece-rows', String(bounds.rows));
+  el.style.setProperty('--piece-color', piece.color);
+  el.style.width = `${bounds.cols * unit}px`;
+  el.style.height = `${bounds.rows * unit}px`;
+  el.innerHTML = '';
+  for (const cell of getTransformedCells({ ...piece, x: null, y: null })) {
+    const block = document.createElement('span');
+    block.className = 'piece-cell';
+    block.style.gridColumn = String(cell.x + 1);
+    block.style.gridRow = String(cell.y + 1);
+    el.appendChild(block);
+  }
 }
 
-export function render(state: AppState, onMove?: (pieceId: string, delta: number) => void, elapsed = '00:00'): void {
+function renderCalendarCells(state: AppState): void {
+  boardEl.innerHTML = '';
+  const windows = visibleWindows(state.puzzle);
+  const open = new Set([cellKey(windows.monthCell), cellKey(windows.dayCell)]);
+  for (const cell of createCalendarCells()) {
+    const el = document.createElement('div');
+    el.className = `calendar-cell ${cell.kind}`;
+    el.style.gridColumn = String(cell.x + 1);
+    el.style.gridRow = String(cell.y + 1);
+    el.textContent = cell.label;
+    if (open.has(cellKey(cell))) el.classList.add('target-open');
+    boardEl.appendChild(el);
+  }
+  const brand = document.createElement('div');
+  brand.className = 'brand-cell';
+  brand.textContent = 'Calendar Puzzle';
+  brand.style.gridColumn = '4 / 8';
+  brand.style.gridRow = '7';
+  boardEl.appendChild(brand);
+}
+
+function boardOriginForDrop(ev: PointerEvent): Cell | null {
+  if (!drag) return null;
+  const metrics = getBoardMetrics();
+  const pieceLeft = ev.clientX - drag.offsetX;
+  const pieceTop = ev.clientY - drag.offsetY;
+  if (pieceLeft > metrics.right || pieceTop > metrics.bottom || pieceLeft < metrics.left - metrics.size || pieceTop < metrics.top - metrics.size) {
+    return null;
+  }
+  const x = Math.round((pieceLeft - metrics.left) / metrics.size);
+  const y = Math.round((pieceTop - metrics.top) / metrics.size);
+  if (x < 0 || x > 6 || y < 0 || y > 6) return null;
+  return { x, y };
+}
+
+function boardOriginForPoint(clientX: number, clientY: number): Cell | null {
+  const metrics = getBoardMetrics();
+  if (clientX < metrics.left || clientX > metrics.right || clientY < metrics.top || clientY > metrics.bottom) return null;
+  const x = Math.floor((clientX - metrics.left) / metrics.size);
+  const y = Math.floor((clientY - metrics.top) / metrics.size);
+  if (x < 0 || x > 6 || y < 0 || y > 6) return null;
+  return { x, y };
+}
+
+function getBoardPadding(): { left: number; top: number } {
+  const styles = getComputedStyle(boardEl);
+  return {
+    left: Number.parseFloat(styles.paddingLeft),
+    top: Number.parseFloat(styles.paddingTop)
+  };
+}
+
+function positionPieceOnBoard(el: HTMLElement, origin: Cell, unit: number): void {
+  const padding = getBoardPadding();
+  el.style.left = `${padding.left + origin.x * unit}px`;
+  el.style.top = `${padding.top + origin.y * unit}px`;
+}
+
+function placeBoardPieces(state: AppState): void {
+  const unit = getCellSize();
+  for (const piece of state.puzzle.pieces.filter((p) => p.x !== null && p.y !== null && p.id !== state.pendingPlacement?.pieceId)) {
+    const el = createPieceElement(piece, false);
+    renderPieceShape(el, piece, unit);
+    el.classList.toggle('selected', state.puzzle.selectedPieceId === piece.id);
+    positionPieceOnBoard(el, { x: piece.x!, y: piece.y! }, unit);
+    boardEl.appendChild(el);
+  }
+}
+
+function placePreviewPiece(state: AppState): void {
+  const pending = state.pendingPlacement;
+  if (!pending) return;
+  const piece = state.puzzle.pieces.find((p) => p.id === pending.pieceId);
+  if (!piece) return;
+  const el = createPieceElement(piece, false);
+  renderPieceShape(el, piece, getCellSize());
+  el.classList.add('preview', pending.valid ? 'valid' : 'invalid', 'selected');
+  el.setAttribute('aria-label', `${piece.name} preview ${pending.valid ? 'valid' : 'invalid'}`);
+  positionPieceOnBoard(el, pending.origin, getCellSize());
+  boardEl.appendChild(el);
+}
+
+function renderTrayPieces(state: AppState): void {
+  trayEl.innerHTML = '';
+  const unit = Math.max(26, Math.min(38, getCellSize() * 0.64));
+  for (const piece of state.puzzle.pieces.filter((p) => (p.x === null || p.y === null) && p.id !== state.pendingPlacement?.pieceId)) {
+    const el = createPieceElement(piece, true);
+    renderPieceShape(el, piece, unit);
+    el.classList.toggle('selected', state.puzzle.selectedPieceId === piece.id);
+    trayEl.appendChild(el);
+  }
+}
+
+function bind() {
+  if (document.body.dataset.calendarBound === '1') return;
+  document.body.dataset.calendarBound = '1';
+
+  document.addEventListener('pointerdown', (ev) => {
+    const target = (ev.target as HTMLElement).closest('.piece') as HTMLElement | null;
+    if (!target || !stateRef || !actionsRef) return;
+    const id = target.dataset.pieceId;
+    const piece = stateRef.puzzle.pieces.find((p) => p.id === id);
+    if (!id || !piece) return;
+    if (stateRef.pendingPlacement && stateRef.pendingPlacement.pieceId !== id) {
+      stateRef.hintText = 'Finish the current preview with Accept or Clear Piece before selecting another piece.';
+      render(stateRef, actionsRef, timerEl.textContent ?? '00:00');
+      ev.preventDefault();
+      return;
+    }
+
+    actionsRef.onSelect(id);
+    const rect = target.getBoundingClientRect();
+    const grabRatioX = (ev.clientX - rect.left) / rect.width;
+    const grabRatioY = (ev.clientY - rect.top) / rect.height;
+    renderPieceShape(target, piece, getCellSize());
+    const dragRect = target.getBoundingClientRect();
+    drag = {
+      id,
+      pointerId: ev.pointerId,
+      offsetX: grabRatioX * dragRect.width,
+      offsetY: grabRatioY * dragRect.height,
+      source: piece.x === null || piece.y === null ? null : { x: piece.x, y: piece.y }
+    };
+    target.setPointerCapture?.(ev.pointerId);
+    target.classList.add('dragging');
+    target.style.position = 'fixed';
+    target.style.zIndex = '30';
+    target.style.left = `${ev.clientX - drag.offsetX}px`;
+    target.style.top = `${ev.clientY - drag.offsetY}px`;
+    ev.preventDefault();
+  });
+
+  document.addEventListener('pointermove', (ev) => {
+    if (!drag) return;
+    const el = document.querySelector(`[data-piece-id="${drag.id}"]`) as HTMLElement | null;
+    if (!el) return;
+    el.style.left = `${ev.clientX - drag.offsetX}px`;
+    el.style.top = `${ev.clientY - drag.offsetY}px`;
+    ev.preventDefault();
+  });
+
+  document.addEventListener('pointerup', (ev) => {
+    if (!drag || !stateRef || !actionsRef) return;
+    const piece = stateRef.puzzle.pieces.find((p) => p.id === drag!.id);
+    const target = boardOriginForDrop(ev);
+    if (piece && target) {
+      actionsRef.onPreview(piece.id, target, drag.source);
+    } else if (piece) {
+      actionsRef.onReturnToTray(piece.id);
+    }
+    drag = null;
+    ev.preventDefault();
+  });
+
+  document.addEventListener('dblclick', (ev) => {
+    const target = (ev.target as HTMLElement).closest('.piece') as HTMLElement | null;
+    if (!target || !stateRef || !actionsRef) return;
+    const id = target.dataset.pieceId;
+    if (!id) return;
+    if (stateRef.pendingPlacement && stateRef.pendingPlacement.pieceId !== id) {
+      stateRef.hintText = 'Finish the current preview with Accept or Clear Piece before selecting another piece.';
+      render(stateRef, actionsRef, timerEl.textContent ?? '00:00');
+      return;
+    }
+    stateRef.puzzle.selectedPieceId = id;
+    actionsRef.onSelect(id);
+  });
+
+  boardEl.addEventListener('click', (ev) => {
+    if (!stateRef || !actionsRef || drag) return;
+    if ((ev.target as HTMLElement).closest('.piece')) return;
+    const selectedId = stateRef.pendingPlacement?.pieceId ?? stateRef.puzzle.selectedPieceId;
+    if (!selectedId) return;
+    const piece = stateRef.puzzle.pieces.find((p) => p.id === selectedId);
+    if (!piece) return;
+    const origin = boardOriginForPoint(ev.clientX, ev.clientY);
+    if (!origin) return;
+    const source = piece.x === null || piece.y === null ? stateRef.pendingPlacement?.source ?? null : { x: piece.x, y: piece.y };
+    actionsRef.onPreview(selectedId, origin, source);
+    ev.preventDefault();
+  });
+}
+
+export function render(state: AppState, actions: RenderActions, elapsed = '00:00'): void {
+  stateRef = state;
+  actionsRef = actions;
   const snapshot = JSON.stringify({
     pieces: state.puzzle.pieces,
+    pending: state.pendingPlacement,
+    selected: state.puzzle.selectedPieceId,
     moveCount: state.moveCount,
     elapsed,
     streak: state.streak,
     hint: state.hintText,
     tutorial: state.showTutorial && !state.tutorialCompleted,
     a11y: state.accessibility,
-    cols: state.puzzle.width,
-    rows: state.puzzle.height
+    date: [state.puzzle.monthIndex, state.puzzle.day]
   });
-  if (snapshot === lastSnapshot) return;
+  if (snapshot === lastSnapshot && !drag) return;
   lastSnapshot = snapshot;
 
   document.body.classList.toggle('reduced-motion', state.accessibility.reducedMotion);
@@ -91,27 +295,15 @@ export function render(state: AppState, onMove?: (pieceId: string, delta: number
   streakEl.textContent = String(state.streak);
   hintEl.textContent = state.hintText;
 
-  boardEl.style.setProperty('--cols', String(state.puzzle.width));
-  boardEl.style.setProperty('--rows', String(state.puzzle.height));
-
-  for (const p of state.puzzle.pieces) {
-    let el = pieceEls.get(p.id);
-    if (!el) {
-      el = createPieceEl(p);
-      pieceEls.set(p.id, el);
-      boardEl.appendChild(el);
-    }
-    const [left, top, width, height] = getPieceStyle(p);
-    el.style.left = left;
-    el.style.top = top;
-    el.style.width = width;
-    el.style.height = height;
-  }
+  renderCalendarCells(state);
+  placeBoardPieces(state);
+  placePreviewPiece(state);
+  renderTrayPieces(state);
 
   debugEl.textContent = render_game_to_text(state.puzzle);
   tutorialEl.textContent = (!state.tutorialCompleted && state.showTutorial)
-    ? 'Tutorial: drag any piece one cell. Use Hint if stuck.'
+    ? 'Drag a piece onto the calendar, rotate while previewing, then Accept when the aura is green.'
     : '';
 
-  if (onMove) bind(state, onMove);
+  bind();
 }

@@ -19,7 +19,9 @@ out.push(`persistence: ${ (await page.locator('#hint').textContent()) === hint }
 await page.keyboard.press('Tab'); await page.keyboard.press('Tab');
 out.push('a11y navigation: tabbed controls');
 out.push(`tutorial visible=${Boolean(await page.locator('#tutorial').textContent())}`);
-await page.click('#undoBtn'); await page.click('#redoBtn');
-out.push('edge-case interaction passed');
+await page.click('#rotateBtn');
+await page.click('#clearBtn');
+await page.click('#redoBtn');
+out.push('piece control interaction passed');
 fs.writeFileSync('.logs/10_playwright_gameplay.log', out.join('\n'));
 await browser.close();

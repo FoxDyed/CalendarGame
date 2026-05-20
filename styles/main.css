@@ -225,6 +225,12 @@ button:active { transform: translateY(1px); }
   filter: drop-shadow(0 12px 16px rgba(38, 21, 8, .44));
 }
 
+.piece.drag-ghost {
+  position: fixed;
+  margin: 0;
+  z-index: 1000;
+}
+
 .piece.preview {
   opacity: .9;
   z-index: 12;

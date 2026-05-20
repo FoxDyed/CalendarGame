@@ -21,7 +21,15 @@ interface RenderActions {
 
 let stateRef: AppState | null = null;
 let actionsRef: RenderActions | null = null;
-let drag: { id: string; pointerId: number; offsetX: number; offsetY: number; source: Cell | null } | null = null;
+let drag: {
+  id: string;
+  pointerId: number;
+  offsetX: number;
+  offsetY: number;
+  source: Cell | null;
+  ghost: HTMLElement;
+  sourceEl: HTMLElement;
+} | null = null;
 let lastSnapshot = '';
 
 function cellKey(cell: Cell): string {
@@ -120,6 +128,19 @@ function boardOriginForDrop(ev: PointerEvent): Cell | null {
   return { x, y };
 }
 
+function positionDragGhost(clientX: number, clientY: number): void {
+  if (!drag) return;
+  drag.ghost.style.left = `${clientX - drag.offsetX}px`;
+  drag.ghost.style.top = `${clientY - drag.offsetY}px`;
+}
+
+function cleanupDrag(): void {
+  if (!drag) return;
+  drag.sourceEl.style.visibility = '';
+  drag.ghost.remove();
+  drag = null;
+}
+
 function boardOriginForPoint(clientX: number, clientY: number): Cell | null {
   const metrics = getBoardMetrics();
   if (clientX < metrics.left || clientX > metrics.right || clientY < metrics.top || clientY > metrics.bottom) return null;
@@ -199,43 +220,59 @@ function bind() {
     const rect = target.getBoundingClientRect();
     const grabRatioX = (ev.clientX - rect.left) / rect.width;
     const grabRatioY = (ev.clientY - rect.top) / rect.height;
-    renderPieceShape(target, piece, getCellSize());
-    const dragRect = target.getBoundingClientRect();
+    const ghost = createPieceElement(piece, false);
+    renderPieceShape(ghost, piece, getCellSize());
+    ghost.classList.add('dragging', 'drag-ghost');
+    ghost.style.position = 'fixed';
+    ghost.style.left = '0px';
+    ghost.style.top = '0px';
+    ghost.style.margin = '0';
+    ghost.style.visibility = 'hidden';
+    ghost.style.zIndex = '1000';
+    document.body.appendChild(ghost);
+
+    const dragRect = ghost.getBoundingClientRect();
     drag = {
       id,
       pointerId: ev.pointerId,
       offsetX: grabRatioX * dragRect.width,
       offsetY: grabRatioY * dragRect.height,
-      source: piece.x === null || piece.y === null ? null : { x: piece.x, y: piece.y }
+      source: piece.x === null || piece.y === null ? null : { x: piece.x, y: piece.y },
+      ghost,
+      sourceEl: target
     };
     target.setPointerCapture?.(ev.pointerId);
-    target.classList.add('dragging');
-    target.style.position = 'fixed';
-    target.style.zIndex = '30';
-    target.style.left = `${ev.clientX - drag.offsetX}px`;
-    target.style.top = `${ev.clientY - drag.offsetY}px`;
+    target.style.visibility = 'hidden';
+    ghost.style.visibility = 'visible';
+    positionDragGhost(ev.clientX, ev.clientY);
     ev.preventDefault();
   });
 
   document.addEventListener('pointermove', (ev) => {
-    if (!drag) return;
-    const el = document.querySelector(`[data-piece-id="${drag.id}"]`) as HTMLElement | null;
-    if (!el) return;
-    el.style.left = `${ev.clientX - drag.offsetX}px`;
-    el.style.top = `${ev.clientY - drag.offsetY}px`;
+    if (!drag || ev.pointerId !== drag.pointerId) return;
+    positionDragGhost(ev.clientX, ev.clientY);
     ev.preventDefault();
   });
 
   document.addEventListener('pointerup', (ev) => {
-    if (!drag || !stateRef || !actionsRef) return;
-    const piece = stateRef.puzzle.pieces.find((p) => p.id === drag!.id);
+    if (!drag || ev.pointerId !== drag.pointerId || !stateRef || !actionsRef) return;
+    const currentDrag = drag;
+    const piece = stateRef.puzzle.pieces.find((p) => p.id === currentDrag.id);
     const target = boardOriginForDrop(ev);
+    cleanupDrag();
     if (piece && target) {
-      actionsRef.onPreview(piece.id, target, drag.source);
+      actionsRef.onPreview(piece.id, target, currentDrag.source);
     } else if (piece) {
       actionsRef.onReturnToTray(piece.id);
     }
-    drag = null;
+    ev.preventDefault();
+  });
+
+  document.addEventListener('pointercancel', (ev) => {
+    if (!drag || ev.pointerId !== drag.pointerId || !stateRef || !actionsRef) return;
+    const piece = stateRef.puzzle.pieces.find((p) => p.id === drag!.id);
+    cleanupDrag();
+    if (piece) actionsRef.onReturnToTray(piece.id);
     ev.preventDefault();
   });
 

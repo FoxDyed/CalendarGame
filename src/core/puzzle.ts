@@ -25,7 +25,7 @@ export function createInitialState(): PuzzleState {
     monthIndex: 0,
     day: 1,
     selectedPieceId: null,
-    pieces: PIECE_DEFS.map((p) => ({ ...p, cells: p.cells.map((c) => ({ ...c })), rotation: 0, x: null, y: null }))
+    pieces: PIECE_DEFS.map((p) => ({ ...p, cells: p.cells.map((c) => ({ ...c })), rotation: 0, flipped: false, x: null, y: null }))
   };
 }
 
@@ -62,15 +62,35 @@ export function rotatedCells(cells: Cell[]): Cell[] {
   return normalizedCells(cells.map((c) => ({ x: c.y, y: -c.x })));
 }
 
+export function flippedCells(cells: Cell[]): Cell[] {
+  const maxX = Math.max(...cells.map((c) => c.x));
+  return normalizedCells(cells.map((c) => ({ x: maxX - c.x, y: c.y })));
+}
+
 export function rotatePiece(state: PuzzleState, pieceId: string): boolean {
   const piece = state.pieces.find((p) => p.id === pieceId);
   if (!piece) return false;
-  const original = { cells: piece.cells.map((c) => ({ ...c })), rotation: piece.rotation };
+  const original = { cells: piece.cells.map((c) => ({ ...c })), rotation: piece.rotation, flipped: piece.flipped };
   piece.cells = rotatedCells(piece.cells);
   piece.rotation = (piece.rotation + 90) % 360;
   if (piece.x !== null && piece.y !== null && !canPlacePiece(state, piece.id, { x: piece.x, y: piece.y })) {
     piece.cells = original.cells;
     piece.rotation = original.rotation;
+    piece.flipped = original.flipped;
+    return false;
+  }
+  return true;
+}
+
+export function flipPiece(state: PuzzleState, pieceId: string): boolean {
+  const piece = state.pieces.find((p) => p.id === pieceId);
+  if (!piece) return false;
+  const original = { cells: piece.cells.map((c) => ({ ...c })), flipped: piece.flipped };
+  piece.cells = flippedCells(piece.cells);
+  piece.flipped = !piece.flipped;
+  if (piece.x !== null && piece.y !== null && !canPlacePiece(state, piece.id, { x: piece.x, y: piece.y })) {
+    piece.cells = original.cells;
+    piece.flipped = original.flipped;
     return false;
   }
   return true;
@@ -162,6 +182,7 @@ export function randomize(state: PuzzleState, rng: () => number): void {
     p.y = null;
     const turns = Math.floor(rng() * 4);
     for (let i = 0; i < turns; i += 1) rotatePiece(state, p.id);
+    if (rng() >= 0.5) flipPiece(state, p.id);
   }
   state.pieces.sort(() => rng() - 0.5);
   state.selectedPieceId = state.pieces[0]?.id ?? null;
@@ -172,7 +193,7 @@ export function movePiece(_state: PuzzleState, _pieceId: string, _delta: number)
 }
 
 export function legalMoves(state: PuzzleState): Move[] {
-  return state.pieces.map((p) => ({ pieceId: p.id, from: p.x === null || p.y === null ? null : { x: p.x, y: p.y }, to: null, rotation: p.rotation }));
+  return state.pieces.map((p) => ({ pieceId: p.id, from: p.x === null || p.y === null ? null : { x: p.x, y: p.y }, to: null, rotation: p.rotation, flipped: p.flipped }));
 }
 
 export function setDate(state: PuzzleState, monthIndex: number, day: number): void {

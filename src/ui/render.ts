@@ -339,7 +339,7 @@ export function render(state: AppState, actions: RenderActions, elapsed = '00:00
 
   debugEl.textContent = render_game_to_text(state.puzzle);
   tutorialEl.textContent = (!state.tutorialCompleted && state.showTutorial)
-    ? 'Drag a piece onto the calendar, rotate while previewing, then Accept when the aura is green.'
+    ? 'Drag a piece onto the calendar, rotate or flip while previewing, then Accept when the aura is green.'
     : '';
 
   bind();

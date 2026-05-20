@@ -15,6 +15,7 @@ export interface Piece {
   color: string;
   cells: Cell[];
   rotation: number;
+  flipped: boolean;
   x: number | null;
   y: number | null;
 }
@@ -33,6 +34,7 @@ export interface Move {
   from: Cell | null;
   to: Cell | null;
   rotation: number;
+  flipped: boolean;
 }
 
 export interface VisibilityWindow {

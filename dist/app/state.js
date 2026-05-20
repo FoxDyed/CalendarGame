@@ -24,7 +24,7 @@ export function createAppState() {
         undoStack: [],
         redoStack: [],
         pendingPlacement: null,
-        hintText: 'Pick a piece, rotate it if needed, then place it on the calendar without covering today.',
+        hintText: 'Pick a piece, rotate or flip it if needed, then place it on the calendar without covering today.',
         tutorialCompleted: false,
         showTutorial: true,
         accessibility: {

@@ -20,6 +20,7 @@ await page.keyboard.press('Tab'); await page.keyboard.press('Tab');
 out.push('a11y navigation: tabbed controls');
 out.push(`tutorial visible=${Boolean(await page.locator('#tutorial').textContent())}`);
 await page.click('#rotateBtn');
+await page.click('#flipBtn');
 await page.click('#clearBtn');
 await page.click('#redoBtn');
 out.push('piece control interaction passed');

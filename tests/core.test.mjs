@@ -5,6 +5,7 @@ import {
   canPlacePiece,
   createCalendarCells,
   createInitialState,
+  flipPiece,
   getTransformedCells,
   hasCollision,
   placePiece,
@@ -54,6 +55,20 @@ test('pieces rotate around normalized cells', () => {
   const after = getTransformedCells(s.pieces.find((p) => p.id === 'D')).map((c) => `${c.x},${c.y}`).join('|');
   assert.notEqual(after, before);
   assert.equal(s.pieces.find((p) => p.id === 'D').rotation, 90);
+});
+
+test('pieces flip across their vertical axis', () => {
+  const s = createInitialState();
+  const piece = s.pieces.find((p) => p.id === 'B');
+  const before = getTransformedCells(piece).map((c) => `${c.x},${c.y}`).join('|');
+  assert.equal(piece.flipped, false);
+  assert.equal(flipPiece(s, 'B'), true);
+  const after = getTransformedCells(piece).map((c) => `${c.x},${c.y}`).join('|');
+  assert.notEqual(after, before);
+  assert.equal(piece.flipped, true);
+  assert.equal(flipPiece(s, 'B'), true);
+  assert.equal(getTransformedCells(piece).map((c) => `${c.x},${c.y}`).join('|'), before);
+  assert.equal(piece.flipped, false);
 });
 
 test('serialization and date validation remain stable', () => {

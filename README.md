@@ -14,7 +14,7 @@ The game defaults to today's date, but you can also pick any valid date or rando
 
 1. Pick a piece from the tray.
 2. Drag it onto the calendar, or select it and click a board location.
-3. Rotate it while it is previewing on the board.
+3. Rotate or flip it while it is previewing on the board.
 4. Watch the aura around the preview:
    - Green means the piece fits.
    - Red means it overlaps, covers the date, or falls outside the board.
@@ -27,7 +27,8 @@ The game defaults to today's date, but you can also pick any valid date or rando
 - Custom date picker.
 - Random date mode.
 - Drag-to-preview and click-to-preview placement.
-- Rotate-before-accept flow for careful positioning.
+- Piece rotation and vertical-axis flipping, matching the physical puzzle.
+- Rotate/flip-before-accept flow for careful positioning.
 - Green/red placement feedback.
 - Piece tray with the full puzzle set.
 - Move counter, timer, hint text, and shareable seed link.
@@ -40,7 +41,7 @@ This project is a small static TypeScript app with no frontend framework. The pu
 
 Main pieces of the codebase:
 
-- `src/core/puzzle.ts` defines the board, pieces, rotations, collisions, placement validation, and win condition.
+- `src/core/puzzle.ts` defines the board, pieces, rotations, flips, collisions, placement validation, and win condition.
 - `src/core/date.ts` handles valid puzzle dates.
 - `src/app/state.ts` defines the application state, daily mode, pending placement, and accessibility settings.
 - `src/ui/render.ts` renders the calendar, tray, preview pieces, and pointer interactions.
@@ -97,4 +98,3 @@ npm run build
 ```
 
 Then commit both the source changes and updated `dist/` output so the published page receives the latest browser code.
-

@@ -12,6 +12,9 @@ export function loadState(): AppState | null {
   try {
     const parsed = JSON.parse(raw) as AppState;
     if (!parsed.puzzle?.pieces?.every((p) => Array.isArray(p.cells))) return null;
+    for (const piece of parsed.puzzle.pieces) {
+      piece.flipped ??= false;
+    }
     return parsed;
   } catch { return null; }
 }

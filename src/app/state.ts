@@ -6,6 +6,7 @@ export interface MoveRecord {
   from: Cell | null;
   to: Cell | null;
   rotation: number;
+  flipped: boolean;
 }
 
 export interface PendingPlacement {
@@ -68,7 +69,7 @@ export function createAppState(): AppState {
     undoStack: [],
     redoStack: [],
     pendingPlacement: null,
-    hintText: 'Pick a piece, rotate it if needed, then place it on the calendar without covering today.',
+    hintText: 'Pick a piece, rotate or flip it if needed, then place it on the calendar without covering today.',
     tutorialCompleted: false,
     showTutorial: true,
     accessibility: { highContrast: false, largerText: false, reducedMotion: false, soundEnabled: true }

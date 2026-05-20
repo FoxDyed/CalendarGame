@@ -274,6 +274,7 @@ export function createInitialState() {
                         ...c
                     })),
                 rotation: 0,
+                flipped: false,
                 x: null,
                 y: null
             }))
@@ -362,6 +363,13 @@ export function rotatedCells(cells) {
             y: -c.x
         })));
 }
+export function flippedCells(cells) {
+    const maxX = Math.max(...cells.map((c)=>c.x));
+    return normalizedCells(cells.map((c)=>({
+            x: maxX - c.x,
+            y: c.y
+        })));
+}
 export function rotatePiece(state, pieceId) {
     const piece = state.pieces.find((p)=>p.id === pieceId);
     if (!piece) return false;
@@ -369,7 +377,8 @@ export function rotatePiece(state, pieceId) {
         cells: piece.cells.map((c)=>({
                 ...c
             })),
-        rotation: piece.rotation
+        rotation: piece.rotation,
+        flipped: piece.flipped
     };
     piece.cells = rotatedCells(piece.cells);
     piece.rotation = (piece.rotation + 90) % 360;
@@ -379,6 +388,28 @@ export function rotatePiece(state, pieceId) {
     })) {
         piece.cells = original.cells;
         piece.rotation = original.rotation;
+        piece.flipped = original.flipped;
+        return false;
+    }
+    return true;
+}
+export function flipPiece(state, pieceId) {
+    const piece = state.pieces.find((p)=>p.id === pieceId);
+    if (!piece) return false;
+    const original = {
+        cells: piece.cells.map((c)=>({
+                ...c
+            })),
+        flipped: piece.flipped
+    };
+    piece.cells = flippedCells(piece.cells);
+    piece.flipped = !piece.flipped;
+    if (piece.x !== null && piece.y !== null && !canPlacePiece(state, piece.id, {
+        x: piece.x,
+        y: piece.y
+    })) {
+        piece.cells = original.cells;
+        piece.flipped = original.flipped;
         return false;
     }
     return true;
@@ -467,6 +498,7 @@ export function randomize(state, rng) {
         p.y = null;
         const turns = Math.floor(rng() * 4);
         for(let i = 0; i < turns; i += 1)rotatePiece(state, p.id);
+        if (rng() >= 0.5) flipPiece(state, p.id);
     }
     state.pieces.sort(()=>rng() - 0.5);
     state.selectedPieceId = state.pieces[0]?.id ?? null;
@@ -482,7 +514,8 @@ export function legalMoves(state) {
                 y: p.y
             },
             to: null,
-            rotation: p.rotation
+            rotation: p.rotation,
+            flipped: p.flipped
         }));
 }
 export function setDate(state, monthIndex, day) {

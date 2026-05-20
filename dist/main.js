@@ -1,7 +1,7 @@
 import { createAppState, todayDailyId } from './app/state.js';
 import { loadState, saveState } from './app/persistence.js';
 import { render } from './ui/render.js';
-import { canPlacePiece, isSolved, placePiece, removePiece, rotatePiece, setDate } from './core/puzzle.js';
+import { canPlacePiece, flipPiece, isSolved, placePiece, removePiece, rotatePiece, setDate } from './core/puzzle.js';
 import { daysInPuzzleMonth } from './core/date.js';
 const loaded = loadState();
 const state = loaded ?? createAppState();
@@ -22,7 +22,7 @@ function resetPuzzle() {
     state.undoStack = [];
     state.redoStack = [];
     state.pendingPlacement = null;
-    state.hintText = 'Pick a piece, rotate it if needed, then place it on the calendar without covering today.';
+    state.hintText = 'Pick a piece, rotate or flip it if needed, then place it on the calendar without covering today.';
 }
 function clearPlacedPieces() {
     for (const piece of state.puzzle.pieces){
@@ -94,7 +94,7 @@ function rerender() {
                 valid: canPlacePiece(state.puzzle, pieceId, origin)
             };
             const piece = state.puzzle.pieces.find((p)=>p.id === pieceId);
-            state.hintText = state.pendingPlacement.valid ? `${piece?.name ?? 'Piece'} fits here. Rotate if you want, then Accept to place it.` : `${piece?.name ?? 'Piece'} does not fit here yet. Rotate or move it until the aura turns green.`;
+            state.hintText = state.pendingPlacement.valid ? `${piece?.name ?? 'Piece'} fits here. Rotate or Flip if you want, then Accept to place it.` : `${piece?.name ?? 'Piece'} does not fit here yet. Rotate, flip, or move it until the aura turns green.`;
             rerender();
         },
         onReturnToTray: (pieceId)=>{
@@ -126,10 +126,10 @@ function bindEvents() {
         setPuzzleDate(selected.getMonth(), selected.getDate(), 'Custom date selected. Leave that month and day visible.');
         rerender();
     });
-    document.getElementById('rotateBtn')?.addEventListener('click', ()=>{
+    function transformSelectedPiece(transform, verb) {
         const id = state.puzzle.selectedPieceId;
         if (!id) {
-            state.hintText = 'Select a piece first, then rotate.';
+            state.hintText = `Select a piece first, then ${verb}.`;
         } else if (state.pendingPlacement?.pieceId === id) {
             const piece = state.puzzle.pieces.find((p)=>p.id === id);
             const saved = piece ? {
@@ -140,27 +140,33 @@ function bindEvents() {
                 piece.x = null;
                 piece.y = null;
             }
-            if (!rotatePiece(state.puzzle, id)) {
-                state.hintText = 'That piece could not rotate.';
+            if (!transform(id)) {
+                state.hintText = `That piece could not ${verb}.`;
             } else {
                 state.pendingPlacement.valid = canPlacePiece(state.puzzle, id, state.pendingPlacement.origin);
-                state.hintText = state.pendingPlacement.valid ? 'That rotation fits. Accept to place it.' : 'That rotation does not fit here. Try another rotation or drag it elsewhere.';
+                state.hintText = state.pendingPlacement.valid ? `That ${verb} fits. Accept to place it.` : `That ${verb} does not fit here. Try another transform or drag it elsewhere.`;
             }
             if (piece && saved) {
                 piece.x = saved.x;
                 piece.y = saved.y;
             }
-        } else if (!rotatePiece(state.puzzle, id)) {
-            state.hintText = 'That rotation collides here. Pick it up or move it first.';
+        } else if (!transform(id)) {
+            state.hintText = `That ${verb} collides here. Pick it up or move it first.`;
         }
         rerender();
+    }
+    document.getElementById('rotateBtn')?.addEventListener('click', ()=>{
+        transformSelectedPiece((id)=>rotatePiece(state.puzzle, id), 'rotation');
+    });
+    document.getElementById('flipBtn')?.addEventListener('click', ()=>{
+        transformSelectedPiece((id)=>flipPiece(state.puzzle, id), 'flip');
     });
     document.getElementById('acceptBtn')?.addEventListener('click', ()=>{
         const pending = state.pendingPlacement;
         if (!pending) {
             state.hintText = 'Drag a piece onto the board first, then Accept.';
         } else if (!pending.valid || !placePiece(state.puzzle, pending.pieceId, pending.origin)) {
-            state.hintText = 'That preview is not valid yet. Move or rotate it until the aura turns green.';
+            state.hintText = 'That preview is not valid yet. Move, rotate, or flip it until the aura turns green.';
         } else {
             const piece = state.puzzle.pieces.find((p)=>p.id === pending.pieceId);
             state.pendingPlacement = null;
@@ -176,7 +182,7 @@ function bindEvents() {
         rerender();
     });
     document.getElementById('hintBtn')?.addEventListener('click', ()=>{
-        state.hintText = 'Leave today visible, cover every other active cell, and use Rotate before dropping a piece if its shape is close.';
+        state.hintText = 'Leave today visible, cover every other active cell, and use Rotate or Flip before accepting a piece if its shape is close.';
         rerender();
     });
     document.getElementById('redoBtn')?.addEventListener('click', ()=>{
